@@ -57,7 +57,7 @@ export const getOriginEndpoint = (key) => {
   return endpoints[key];
 };
 
-export const skylineBase = () => '/api/openstack/skyline/api/v1';
+export const skylineBase = () => 'https://287d-95-70-156-196.eu.ngrok.io/api/openstack/skyline/api/v1';
 export const keystoneBase = () => getOpenstackEndpoint('keystone');
 export const novaBase = () => getOpenstackEndpoint('nova');
 export const cinderBase = () => getOpenstackEndpoint('cinder');
