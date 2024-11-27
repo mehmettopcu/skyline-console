@@ -25,6 +25,20 @@ export class StepLabel extends Base {
     return t('Labels');
   }
 
+  get defaultValue() {
+    const values = {};
+    const { context: { clusterTemplate = {} } = {} } = this.props;
+    const { selectedRows = [] } = clusterTemplate;
+    const { labels = {} } = selectedRows[0] || {};
+    values.additionalLabels = Object.keys(labels || {}).map((key) => ({
+      value: {
+        key,
+        value: labels[key],
+      },
+    }));
+    return values;
+  }
+
   get formItems() {
     return [
       {
@@ -33,6 +47,11 @@ export class StepLabel extends Base {
         type: 'add-select',
         itemComponent: KeyValueInput,
         addText: t('Add Label'),
+        onChange: (value) => {
+          this.updateContext({
+            additionalLabels: value,
+          });
+        },
       },
     ];
   }

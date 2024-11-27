@@ -20,7 +20,7 @@ import { UserStore } from 'stores/keystone/user';
 import { RoleStore } from 'stores/keystone/role';
 import { ModalAction } from 'containers/Action';
 import {
-  nameDomainColumns,
+  userDomainColumns,
   transferFilterOption,
 } from 'resources/keystone/domain';
 import { roleFilterOption } from 'resources/keystone/role';
@@ -111,17 +111,17 @@ export class ManageUser extends ModalAction {
     return usersProjectRole;
   };
 
-  static policy = 'identity:update_project';
+  static policy = ['identity:create_grant', 'identity:revoke_grant'];
 
   static allowed = () => Promise.resolve(true);
 
   get leftUserTable() {
-    return nameDomainColumns;
+    return userDomainColumns;
   }
 
   get rightUserTable() {
     return [
-      ...nameDomainColumns,
+      ...userDomainColumns,
       {
         title: t('Select Project Role'),
         dataIndex: 'id',
@@ -129,6 +129,12 @@ export class ManageUser extends ModalAction {
       },
     ];
   }
+
+  onClickSelect = (e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+  };
 
   renderSelect = (id) => {
     return (
@@ -141,6 +147,7 @@ export class ManageUser extends ModalAction {
         onChange={(value, option) => {
           this.onSelectChange(value, option, id);
         }}
+        onClick={this.onClickSelect}
       />
     );
   };
@@ -206,7 +213,6 @@ export class ManageUser extends ModalAction {
         filterOption: transferFilterOption,
         wrapperCol: this.wrapperCol,
         loading: this.userStore.list.isLoading,
-        onRowRight: () => null,
       },
     ];
   }

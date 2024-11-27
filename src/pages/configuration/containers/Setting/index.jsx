@@ -16,6 +16,7 @@ import { observer, inject } from 'mobx-react';
 import Base from 'containers/List';
 import globalSettingStore from 'stores/skyline/setting';
 import { onlyAdminCanReadPolicy } from 'resources/skyline/policy';
+import { SETTING_DESC } from 'resources/skyline/setting';
 import actionConfigs from './actions';
 
 export class Setting extends Base {
@@ -43,22 +44,61 @@ export class Setting extends Base {
     return actionConfigs;
   }
 
-  getColumns = () => [
-    {
-      title: t('Type'),
-      dataIndex: 'key',
-    },
-    {
-      title: t('Effective Mode'),
-      dataIndex: 'restart_service',
-      titleTip: t('Effective mode after configuration changes'),
-      render: (value) =>
-        value ? t('Take effect after restart') : t('Immediate effect'),
-    },
-  ];
+  getDesc(record) {
+    const { key } = record;
+    return SETTING_DESC[key] || '-';
+  }
+
+  get modeOptions() {
+    return [
+      { key: false, label: t('Immediate effect') },
+      { key: true, label: t('Take effect after restart') },
+    ];
+  }
+
+  getColumns() {
+    return [
+      {
+        title: t('Parameter'),
+        dataIndex: 'key',
+      },
+      {
+        title: t('Effective Mode'),
+        dataIndex: 'restart_service',
+        titleTip: t('Effective mode after configuration changes'),
+        render: (value) => {
+          const item = this.modeOptions.find((m) => m.key === value);
+          return item?.label || '-';
+        },
+      },
+      {
+        title: t('Description'),
+        dataIndex: 'description',
+        render: (value, record) => this.getDesc(record),
+      },
+    ];
+  }
 
   get searchFilters() {
-    return [];
+    return [
+      {
+        name: 'key',
+        label: t('Parameter'),
+      },
+      {
+        name: 'restart_service',
+        label: t('Effective Mode'),
+        options: this.modeOptions,
+      },
+      {
+        name: 'description',
+        label: t('Description'),
+        filterFunc: (record, val, data) => {
+          const desc = this.getDesc(data).toLowerCase();
+          return desc.includes(val.toLowerCase());
+        },
+      },
+    ];
   }
 }
 

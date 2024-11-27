@@ -65,6 +65,7 @@ export class BaseDetail extends Base {
       this.imageCard,
       this.securityGroupCard,
       this.tagsCard,
+      this.keypairCard,
     ];
     if (!isIronicInstance(this.detailData)) {
       cards.push(this.serverGroupCard);
@@ -168,6 +169,30 @@ export class BaseDetail extends Base {
     }
     return {
       title: t('Flavor Info'),
+      options,
+    };
+  }
+
+  get keypairCard() {
+    const keypair = this.detailData.key_name;
+    const url = this.getRoutePath('keypairDetail', { id: keypair });
+    const content = keypair ? (
+      this.isAdminPage ? (
+        <div>{keypair}</div>
+      ) : (
+        <Link to={url}>{keypair}</Link>
+      )
+    ) : (
+      '-'
+    );
+    const options = [
+      {
+        label: t('Name'),
+        content,
+      },
+    ];
+    return {
+      title: t('Keypair Info'),
       options,
     };
   }
@@ -399,8 +424,6 @@ export class BaseDetail extends Base {
         </div>
       );
     });
-    const { isAdminPage } = this.props;
-    const containerProps = { isAdminPage };
     return (
       <Row className={styles['vm-volume']}>
         <div className={styles['volume-inline']} />
@@ -413,7 +436,7 @@ export class BaseDetail extends Base {
               actions={this.volumeActions}
               onFinishAction={this.handleRefreshVolume}
               item={this.detailData}
-              containerProps={containerProps}
+              containerProps={this.props}
               firstActionClassName={styles['attach-btn']}
             />
           </div>

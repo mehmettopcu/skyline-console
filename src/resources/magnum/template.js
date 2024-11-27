@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { flavorArchitectures, flavorCategoryList } from 'resources/nova/flavor';
+import { formatSize } from 'utils';
+
 export const getBaseTemplateColumns = (self) => [
   {
     title: t('ID/Name'),
     dataIndex: 'name',
     routeName: self.getRouteName('containerInfraClusterTemplateDetail'),
+  },
+  {
+    title: t('Project ID/Name'),
+    dataIndex: 'project_name',
+    isHideable: true,
+    hidden: !self.isAdminPage,
   },
   {
     title: t('COE'),
@@ -32,10 +41,41 @@ export const getBaseTemplateColumns = (self) => [
     title: t('Keypair'),
     isHideable: true,
     dataIndex: 'keypair_id',
+    hidden: self.isAdminPage,
     render: (value) => {
-      return value
-        ? self.getLinkRender('keypairDetail', value, { id: value })
-        : '-';
+      if (value) {
+        return self.getLinkRender('keypairDetail', value, { id: value });
+      }
+      return value || '-';
     },
+  },
+];
+
+export const getBaseSimpleFlavorColumns = (self) => [
+  {
+    title: t('ID/Name'),
+    dataIndex: 'name',
+    routeName: self ? self.getRouteName('flavorDetail') : '',
+  },
+  {
+    title: t('Architecture'),
+    dataIndex: 'architecture',
+    valueMap: flavorArchitectures,
+  },
+  {
+    title: t('Category'),
+    dataIndex: 'category',
+    render: (value) => flavorCategoryList[value] || value || '-',
+  },
+  {
+    title: t('CPU'),
+    dataIndex: 'vcpus',
+    isHideable: true,
+  },
+  {
+    title: t('Memory'),
+    dataIndex: 'ram',
+    isHideable: true,
+    render: (ram) => formatSize(ram, 2),
   },
 ];

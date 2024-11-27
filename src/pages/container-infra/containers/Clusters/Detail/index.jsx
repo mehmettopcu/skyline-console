@@ -16,7 +16,6 @@ import { inject, observer } from 'mobx-react';
 import Base from 'containers/TabDetail';
 import { clusterStatus, healthStatus } from 'resources/magnum/cluster';
 import globalClustersStore from 'src/stores/magnum/clusters';
-import { isEmpty } from 'lodash';
 import BaseDetail from './BaseDetail';
 import actionConfigs from '../actions';
 
@@ -38,7 +37,10 @@ export class ClustersDetail extends Base {
   }
 
   get actionConfigs() {
-    return actionConfigs;
+    if (this.isAdminPage) {
+      return actionConfigs.actionConfigsAdmin;
+    }
+    return actionConfigs.actionConfigs;
   }
 
   get detailInfos() {
@@ -48,12 +50,12 @@ export class ClustersDetail extends Base {
         dataIndex: 'name',
       },
       {
-        title: t('Created'),
+        title: t('Created At'),
         dataIndex: 'created_at',
         valueRender: 'toLocalTime',
       },
       {
-        title: t('Updated'),
+        title: t('Updated At'),
         dataIndex: 'updated_at',
         valueRender: 'toLocalTime',
       },
@@ -69,12 +71,7 @@ export class ClustersDetail extends Base {
       {
         title: t('Health Status'),
         dataIndex: 'health_status',
-        valueMap: healthStatus,
-      },
-      {
-        title: t('Health Status Reason'),
-        dataIndex: 'health_status_reason',
-        render: (value) => (isEmpty(value) ? '-' : JSON.stringify(value)),
+        render: (value) => healthStatus[value] || value || '-',
       },
     ];
   }

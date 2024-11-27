@@ -20,11 +20,12 @@ onlyOn(zunServiceEnabled, () => {
     });
 
     it('successfully create', () => {
-      cy.clickHeaderButton(1)
+      cy.clickHeaderActionButton(0)
         .url()
         .should('include', `${listUrl}/create`)
         .wait(5000)
         .formInput('containerName', zunContainerName)
+        .formSelect('image_driver')
         .formInput('image', 'cirros')
         .clickStepActionNextButton()
         .wait(2000)

@@ -29,8 +29,9 @@ import {
 import {
   statusTypes,
   getDomainFormItem,
-  nameDomainColumns,
+  projectDomainColumns,
   transferFilterOption,
+  groupDomainColumns,
 } from 'resources/keystone/domain';
 import { roleFilterOption } from 'resources/keystone/role';
 
@@ -135,7 +136,7 @@ export class Create extends FormAction {
   static allowed = () => Promise.resolve(true);
 
   get leftProjectTable() {
-    return nameDomainColumns;
+    return projectDomainColumns;
   }
 
   get projectRoleList() {
@@ -161,6 +162,12 @@ export class Create extends FormAction {
     this.setState({ projectRoles });
   };
 
+  onClickSelect = (e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+  };
+
   renderSelect = (projectId) => {
     return (
       <Select
@@ -172,13 +179,14 @@ export class Create extends FormAction {
         onChange={(value, option) => {
           this.onSelectChange(value, option, projectId);
         }}
+        onClick={this.onClickSelect}
       />
     );
   };
 
   get rightProjectTable() {
     return [
-      ...nameDomainColumns,
+      ...projectDomainColumns,
       {
         title: t('Select Project Role'),
         dataIndex: 'id',
@@ -203,23 +211,31 @@ export class Create extends FormAction {
   };
 
   get leftUserGroupTable() {
-    return nameDomainColumns;
+    return groupDomainColumns;
   }
 
   get rightUserGroupTable() {
-    return nameDomainColumns;
+    return groupDomainColumns;
   }
 
   checkName = (rule, value) => {
     if (!value) {
       return Promise.reject(t('Please input'));
     }
+    const domainId = this.formRef.current.getFieldValue('domain_id');
+    if (!domainId) {
+      return Promise.resolve();
+    }
     const {
       list: { data },
     } = this.store;
-    const nameUsed = data.filter((it) => it.name === value);
+    const nameUsed = data.filter(
+      (it) => it.name === value && it.domain_id === domainId
+    );
     if (nameUsed[0]) {
-      return Promise.reject(t('Invalid: User name can not be duplicated'));
+      return Promise.reject(
+        t('Invalid: User names in the domain can not be repeated')
+      );
     }
     return Promise.resolve();
   };
@@ -254,6 +270,7 @@ export class Create extends FormAction {
         required: true,
         ...cols,
         maxLength: 30,
+        dependencies: ['domain_id'],
       },
       {
         name: 'email',
@@ -332,7 +349,6 @@ export class Create extends FormAction {
         onChange: this.onChangeProject,
         filterOption: transferFilterOption,
         loading: this.projectStore.list.isLoading,
-        onRowRight: () => null,
       },
       {
         name: 'select_user_group',

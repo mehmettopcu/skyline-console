@@ -11,17 +11,18 @@
   width: 100%;
   min-width: 200px;
   padding: 3px 0 3px 8px;
-  background-color: #fff;
-  border: 1px solid rgb(217, 217, 217);
+  background-color: @table-header-search-input-background;
+  border: 1px solid @table-header-search-input-border-color;
   border-radius: @border-radius;
 
   :global {
     .ant-tag {
       height: 24px;
       margin-right: 4px;
+      margin-bottom: 1px;
       padding: 0 4px;
       color: #fff;
-      font-size: 10px;
+      font-size: @table-header-search-input-font-size;
       line-height: 24px;
       background-color: @primary-color;
       border: none;
@@ -68,7 +69,7 @@
     }
 
     input::placeholder {
-      font-size: 10px;
+      font-size: @table-header-search-input-font-size;
     }
 
     .ant-menu-vertical > .ant-menu-item {
@@ -79,7 +80,7 @@
     .ant-menu-vertical .ant-menu-item {
       margin-top: 0;
       margin-bottom: 0;
-      font-size: 10px;
+      font-size: @table-header-search-input-font-size;
     }
   }
 }
@@ -100,7 +101,7 @@
 }
 
 .key {
-  font-size: 10px;
+  font-size: @table-header-search-input-font-size;
   line-height: 24px;
 
   :global {
@@ -127,6 +128,7 @@
     display: inline-block;
     height: 24px;
     margin: 0 5px 0 0;
+    margin-bottom: 1px;
     line-height: 24px;
   }
 }
@@ -140,13 +142,21 @@
   line-height: 32px;
 }
 
+.search-icon-hidden {
+  display: none;
+}
+
 .close-btn-col {
-  height: 24px;
-  line-height: 24px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 30px;
+  line-height: 30px;
 
   .close-btn {
-    height: 24px !important;
+    height: 28px !important;
     padding: 0;
+    background-color: @table-header-default-button-background;
     border: none;
   }
 }
@@ -157,7 +167,12 @@
 }
 
 .magic-input-checks {
-  min-width: 120px;
   margin-left: 8px;
   line-height: 32px;
+
+  :global {
+    .ant-checkbox + span {
+      text-wrap: nowrap;
+    }
+  }
 }

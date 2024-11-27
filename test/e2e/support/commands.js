@@ -14,11 +14,10 @@
 
 import getTitle from './common';
 
-Cypress.Commands.add('setLanguage', () => {
+Cypress.Commands.add('setLanguage', (value) => {
   const exp = Date.now() + 864000000;
-  const language = Cypress.env('language') || 'zh';
-  const value = language === 'zh' ? 'zh-cn' : 'en';
-  const langValue = { value, expires: exp };
+  const language = Cypress.env('language') || 'en';
+  const langValue = { value: value || language, expires: exp };
   window.localStorage.setItem('lang', JSON.stringify(langValue));
 });
 
@@ -38,6 +37,7 @@ Cypress.Commands.add(
   (visitUrl = '', switchToAdmin = false, isAdmin = false) => {
     cy.setLanguage();
     const switchProject = switchToAdmin;
+    cy.setCookie('time_expired', Cypress.config('timeExpired') || '');
     if (isAdmin) {
       if (Cypress.config('adminToken')) {
         cy.setCookie('session', Cypress.config('adminSession'));
@@ -75,12 +75,17 @@ Cypress.Commands.add(
       method: 'POST',
     }).then((res) => {
       const { body: resBody, headers } = res;
-      const [sk] = headers['set-cookie'];
+      const [sessionCookie, ...rest] = headers['set-cookie'];
+      const timeCookie = rest[rest.length - 1];
+      const getCookieValue = (sk) => sk.split(';')[0].split('=');
       // eslint-disable-next-line no-unused-vars
-      const [_, session] = sk.split(';')[0].split('=');
+      const session = getCookieValue(sessionCookie)[1];
+      const timeExpired = getCookieValue(timeCookie)[1] || '';
       const { keystone_token } = resBody || {};
       cy.setCookie('session', session);
       cy.setCookie('X-Auth-Token', keystone_token);
+      cy.setCookie('time_expired', timeExpired);
+      Cypress.config('timeExpired', timeExpired);
       if (isAdmin) {
         Cypress.config('adminToken', keystone_token);
         Cypress.config('adminSession', session);
@@ -104,8 +109,10 @@ Cypress.Commands.add(
 Cypress.Commands.add('clearToken', () => {
   cy.setCookie('session', '');
   cy.setCookie('X-Auth-Token', '');
+  cy.setCookie('time_expired', '');
   Cypress.config('token', null);
   Cypress.config('adminToken', null);
+  Cypress.config('timeExpired', null);
 });
 
 Cypress.Commands.add('loginAdmin', (visitUrl = '', switchToAdmin = false) => {
@@ -117,8 +124,7 @@ Cypress.Commands.add('loginByPage', (username, password) => {
   cy.visit('/');
   cy.waitLoginFormLoading().wait(5000);
   cy.loginFormSelect(0, 'RegionOne')
-    .loginFormSelect(1, 'Default')
-    .loginFormInput('username', username || Cypress.env('username'))
+    .loginFormInput('domain', username || Cypress.env('username'))
     .loginFormInput('password', password || Cypress.env('password'))
     .loginFormSubmit();
 });
@@ -136,7 +142,7 @@ Cypress.Commands.add('clickMenu', (fatherIndex, sonIndex) => {
 
 Cypress.Commands.add('setLanguageByPage', () => {
   const language = Cypress.env('language');
-  if (language === 'zh') {
+  if (language === 'zh-hans') {
     return;
   }
   cy.log('change language to english');
@@ -146,7 +152,7 @@ Cypress.Commands.add('setLanguageByPage', () => {
     .find('.ant-col')
     .last()
     .find('button')
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   cy.get('.ant-dropdown-menu-light')
     .find('li')
     .eq(2)

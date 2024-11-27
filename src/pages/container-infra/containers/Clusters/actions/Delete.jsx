@@ -21,11 +21,11 @@ export default class DeleteClusters extends ConfirmAction {
   }
 
   get title() {
-    return t('Delete Clusters');
+    return t('Delete Cluster');
   }
 
   get actionName() {
-    return t('Delete Clusters');
+    return t('Delete Cluster');
   }
 
   get buttonText() {
@@ -38,7 +38,14 @@ export default class DeleteClusters extends ConfirmAction {
 
   policy = 'cluster:delete';
 
-  allowedCheckFunc = () => true;
+  allowedCheckFunc = (item) => {
+    const { stack_id, status } = item;
+    const disableDelete =
+      status === 'DELETE_IN_PROGRESS' ||
+      (status === 'CREATE_IN_PROGRESS' && !stack_id);
+
+    return !disableDelete;
+  };
 
   onSubmit = (data) => globalClustersStore.delete({ id: data.id });
 }

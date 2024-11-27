@@ -15,13 +15,11 @@
 import Base from 'components/Form';
 import { inject, observer } from 'mobx-react';
 import globalClusterTemplateStore from 'stores/magnum/clusterTemplates';
-import globalKeypairStore from 'stores/nova/keypair';
 import { getBaseTemplateColumns } from 'resources/magnum/template';
 
 export class StepInfo extends Base {
   init() {
     this.getClustertemplates();
-    this.getKeypairs();
   }
 
   get title() {
@@ -35,7 +33,6 @@ export class StepInfo extends Base {
   async getClustertemplates() {
     await globalClusterTemplateStore.fetchList();
     this.updateDefaultValue();
-    this.updateState();
   }
 
   get clusterTemplates() {
@@ -47,42 +44,45 @@ export class StepInfo extends Base {
     return templates;
   }
 
-  async getKeypairs() {
-    await globalKeypairStore.fetchList();
-  }
-
-  get keypairs() {
-    return globalKeypairStore.list.data || [];
-  }
-
-  get nameForStateUpdate() {
-    return ['clusterTemplate'];
-  }
-
   get defaultValue() {
+    const values = {};
+
     const { template } = this.locationParams;
     if (template) {
-      return {
-        clusterTemplate: {
-          selectedRowKeys: [template],
-          selectedRows: this.clusterTemplates,
-        },
+      values.clusterTemplate = {
+        selectedRowKeys: [template],
+        selectedRows: this.clusterTemplates,
       };
     }
-    return {};
+
+    return values;
   }
 
-  get formItems() {
-    const { clusterTemplate } = this.state;
-    const { keypair_id } = clusterTemplate || {};
+  clusterNameValidator = (rule, value) => {
+    const pattern = /^[a-zA-Z][a-zA-Z0-9_.-]*$/;
+    if (!value) {
+      // eslint-disable-next-line prefer-promise-reject-errors
+      return Promise.reject('');
+    }
+    if (!pattern.test(value)) {
+      return Promise.reject(
+        t(
+          'The name should start with upper letter or lower letter, characters can only contain "0-9, a-z, A-Z, -, _, ."'
+        )
+      );
+    }
+    return Promise.resolve();
+  };
 
+  get formItems() {
     return [
       {
         name: 'name',
         label: t('Cluster Name'),
         type: 'input',
-        placeholder: t('Cluster Name'),
+        placeholder: t('Please input cluster name'),
         required: true,
+        validator: this.clusterNameValidator,
       },
       {
         name: 'clusterTemplate',
@@ -98,33 +98,11 @@ export class StepInfo extends Base {
           },
         ],
         columns: getBaseTemplateColumns(this),
-      },
-      {
-        name: 'keypair',
-        label: t('Keypair'),
-        type: 'select-table',
-        required: !keypair_id,
-        data: this.keypairs,
-        isLoading: globalKeypairStore.list.isLoading,
-        tip: t(
-          'The SSH key is a way to remotely log in to the cluster instance. If it’s not set, the value of this in template will be used.'
-        ),
-        filterParams: [
-          {
-            label: t('Name'),
-            name: 'name',
-          },
-        ],
-        columns: [
-          {
-            title: t('Name'),
-            dataIndex: 'name',
-          },
-          {
-            title: t('Fingerprint'),
-            dataIndex: 'fingerprint',
-          },
-        ],
+        onChange: (value) => {
+          this.updateContext({
+            clusterTemplate: value,
+          });
+        },
       },
     ];
   }

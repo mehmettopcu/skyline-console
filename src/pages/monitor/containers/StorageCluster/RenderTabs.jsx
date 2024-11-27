@@ -14,7 +14,7 @@ import BaseContentContext from 'components/PrometheusChart/component/context';
 
 const { TabPane } = Tabs;
 
-const RenderTabs = () => {
+const RenderTabs = ({ fetchPrometheusFunc }) => {
   const [filters, setFilters] = useState({});
   const [initData, setInitData] = useState([]);
   const [listData, setListData] = useState([]);
@@ -22,10 +22,13 @@ const RenderTabs = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const ctx = useContext(BaseContentContext);
-  const fetchData = createFetchPrometheusClient({
-    requestType: 'current',
-    metricKey: 'storageCluster.tabs',
-  });
+  const fetchData = createFetchPrometheusClient(
+    {
+      requestType: 'current',
+      metricKey: 'storageCluster.tabs',
+    },
+    fetchPrometheusFunc
+  );
 
   const dataHandler = createDataHandler({
     modifyKeys: ['pools', 'osds'],
@@ -35,7 +38,7 @@ const RenderTabs = () => {
       get(pool, 'data.result', []).forEach((r) => {
         const { metric, value } = r;
         retData.push({
-          type: 'pool',
+          tabType: 'pool',
           ...metric,
           value: parseFloat(value[1]) || 0,
         });
@@ -43,7 +46,7 @@ const RenderTabs = () => {
       get(osd, 'data.result', []).forEach((r) => {
         const { metric, value } = r;
         retData.push({
-          type: 'osd',
+          tabType: 'osd',
           ...metric,
           value: parseFloat(value[1]) || 0,
         });
@@ -53,7 +56,7 @@ const RenderTabs = () => {
   });
 
   function getListData(data) {
-    let originData = data.filter((d) => d.type === tab);
+    let originData = data.filter((d) => d.tabType === tab);
     Object.keys(filters).forEach((key) => {
       originData = originData.filter((i) => i[key] === filters[key]);
     });
@@ -63,10 +66,10 @@ const RenderTabs = () => {
   async function handleInitData(data) {
     const newData = [...data];
     const poolPromises = get(METRICDICT, 'storageCluster.poolTab.url', []).map(
-      (item) => fetchPrometheus(item, 'current')
+      (item) => (fetchPrometheusFunc || fetchPrometheus)(item, 'current')
     );
     const osdPromises = get(METRICDICT, 'storageCluster.osdTab.url', []).map(
-      (item) => fetchPrometheus(item, 'current')
+      (item) => (fetchPrometheusFunc || fetchPrometheus)(item, 'current')
     );
 
     function handler(ret, index, primaryKey) {

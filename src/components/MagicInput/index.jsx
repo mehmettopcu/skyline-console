@@ -223,6 +223,7 @@ class MagicInput extends PureComponent {
       value = key === 'false' ? false : key;
     }
     this.updateInput(value);
+    this.onFocusChange(false);
   };
 
   handleSelectFilter = ({ key }) => {
@@ -345,7 +346,11 @@ class MagicInput extends PureComponent {
       <Menu.Item key={it.name}>{it.label}</Menu.Item>
     ));
     return (
-      <Menu className={styles.menu} onClick={this.handleSelectFilter}>
+      <Menu
+        className={styles.menu}
+        onClick={this.handleSelectFilter}
+        id="search-items-menu"
+      >
         {this.renderOptionsClose(filters)}
         {menuItems}
       </Menu>
@@ -441,8 +446,8 @@ class MagicInput extends PureComponent {
   };
 
   clearInputValue = () => {
-    this.inputRef.current.setState({
-      value: '',
+    this.setState({
+      inputValue: '',
     });
   };
 
@@ -450,6 +455,7 @@ class MagicInput extends PureComponent {
     this.clearInputValue();
     this.setState(
       {
+        inputValue: '',
         tags: [],
         currentFilter: null,
         isFocus: false,
@@ -546,7 +552,7 @@ class MagicInput extends PureComponent {
 
   render() {
     const { placeholder } = this.props;
-    const { isFocus } = this.state;
+    const { isFocus, inputValue } = this.state;
     return (
       <div
         className={classnames(
@@ -554,11 +560,13 @@ class MagicInput extends PureComponent {
           'magic-input-outer-wrapper'
         )}
       >
+        {this.renderChecks()}
         <Row
           className={classnames(
             'magic-input-wrapper',
             styles['magic-input-wrapper'],
-            isFocus ? styles['magic-input-wrapper-active'] : ''
+            isFocus ? styles['magic-input-wrapper-active'] : '',
+            isFocus ? 'magic-input-wrapper-active' : ''
           )}
         >
           <Col>{this.renderTags()}</Col>
@@ -574,15 +582,19 @@ class MagicInput extends PureComponent {
               onFocus={this.handleFocus}
               onPressEnter={this.handleEnter}
               onKeyUp={this.handleKeyUp}
+              value={inputValue}
             />
             {this.renderMenu()}
           </Col>
-          <Col className={styles['search-icon']}>
+          <Col
+            className={`${styles['search-icon']} ${
+              isFocus ? styles['search-icon-hidden'] : ''
+            }`}
+          >
             <SearchOutlined />
           </Col>
           {this.renderClose()}
         </Row>
-        {this.renderChecks()}
       </div>
     );
   }

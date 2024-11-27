@@ -30,7 +30,7 @@ const statusToIcon = {
   down: (
     <InfoCircleTwoTone
       style={{ fontSize: 24, marginLeft: 36 }}
-      twoToneColor="#EB354D"
+      twoToneColor={globalCSS.errorColor}
     />
   ),
 };
@@ -61,7 +61,10 @@ const Services = (props) => {
                   )}
                 </Col>
                 <Col className={styles.title} span={6}>
-                  {it.hostname || it.host}
+                  <div>{it.hostname || it.host}</div>
+                  {it.instance && (
+                    <div className={styles.instance}>{it.instance}</div>
+                  )}
                 </Col>
                 <Col className={styles.status} span={6}>
                   <span>{t('Current Status')}</span>

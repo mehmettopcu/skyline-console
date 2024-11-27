@@ -13,11 +13,14 @@
 import Base from 'components/Form';
 import { inject, observer } from 'mobx-react';
 import globalAvailabilityZoneStore from 'stores/nova/zone';
+import { exitPolicies } from 'resources/zun/container';
+import ExposedPorts from '../../../components/ExposedPorts';
 
 export class StepSpec extends Base {
   init() {
     this.getAvailabilityZones();
     this.state.disableRetry = true;
+    this.checkDefaultQuota();
   }
 
   get title() {
@@ -41,21 +44,44 @@ export class StepSpec extends Base {
       }));
   }
 
+  get exitPoliciesOptions() {
+    return Object.entries(exitPolicies).map(([k, v]) => ({
+      label: v,
+      value: k,
+    }));
+  }
+
+  exposedPortValidator = (rule, value) => {
+    const ifHaveEmpty = (value || []).some((it) => {
+      const { value: innerValue } = it;
+      if (innerValue?.port && innerValue?.protocol) {
+        return false;
+      }
+      return true;
+    });
+    if (ifHaveEmpty) {
+      return Promise.reject(new Error(t('Please input port and protocol')));
+    }
+    return Promise.resolve();
+  };
+
+  checkDefaultQuota() {
+    this.updateContext(this.defaultValue);
+  }
+
+  get defaultValue() {
+    return {
+      cpu: 1,
+      memory: 512,
+      disk: 10,
+    };
+  }
+
   get formItems() {
-    const { disableRetry } = this.state;
+    const { context: { exitPolicy, healthcheck } = {} } = this.props;
+    const disableRetry = exitPolicy !== 'on-failure';
+
     return [
-      {
-        name: 'hostname',
-        label: t('Hostname'),
-        type: 'input',
-        placeholder: t('The host name of this container'),
-      },
-      {
-        name: 'runtime',
-        label: t('Runtime'),
-        type: 'input',
-        placeholder: t('The container runtime tool to create container with'),
-      },
       {
         name: 'cpu',
         label: t('CPU (Core)'),
@@ -99,27 +125,10 @@ export class StepSpec extends Base {
         name: 'exitPolicy',
         label: t('Exit Policy'),
         type: 'select',
-        options: [
-          {
-            label: t('No'),
-            value: 'no',
-          },
-          {
-            label: t('On failure'),
-            value: 'on-failure',
-          },
-          {
-            label: t('Always'),
-            value: 'always',
-          },
-          {
-            label: t('Unless Stopped'),
-            value: 'unless-stopped',
-          },
-        ],
+        options: this.exitPoliciesOptions,
         onChange: (value) =>
-          this.setState({
-            disableRetry: value !== 'on-failure',
+          this.updateContext({
+            exitPolicy: value,
           }),
       },
       {
@@ -134,6 +143,76 @@ export class StepSpec extends Base {
         name: 'auto_heal',
         label: t('Enable auto heal'),
         type: 'check',
+      },
+      {
+        name: 'auto_remove',
+        label: t('Enable auto remove'),
+        type: 'check',
+      },
+      {
+        name: 'interactive',
+        label: t('Enable interactive mode'),
+        type: 'check',
+      },
+      {
+        name: 'healthcheck',
+        label: t('Enable Health Check'),
+        type: 'check',
+        onChange: (value) =>
+          this.updateContext({
+            healthcheck: value,
+          }),
+      },
+      {
+        name: 'healthcheck_cmd',
+        label: t('Health Check CMD'),
+        extra: t('Command to run to check health'),
+        type: 'input',
+        min: 1,
+        required: !!healthcheck,
+        display: !!healthcheck,
+      },
+      {
+        name: 'healthcheck_interval',
+        label: t('Health Check Interval'),
+        extra: t('Time between running the check in seconds'),
+        type: 'input-int',
+        min: 1,
+        required: !!healthcheck,
+        display: !!healthcheck,
+      },
+      {
+        name: 'healthcheck_retries',
+        label: t('Health Check Retries'),
+        extra: t('Consecutive failures needed to report unhealthy'),
+        type: 'input-int',
+        min: 1,
+        required: !!healthcheck,
+        display: !!healthcheck,
+      },
+      {
+        name: 'healthcheck_timeout',
+        label: t('Health Check Timeout'),
+        extra: t('Maximum time to allow one check to run in seconds'),
+        type: 'input-int',
+        min: 1,
+        required: !!healthcheck,
+        display: !!healthcheck,
+      },
+      {
+        name: 'exposedPorts',
+        label: t('Exposed Ports'),
+        type: 'add-select',
+        optionsProtocol: [
+          { label: t('TCP'), value: 'tcp' },
+          { label: t('UDP'), value: 'udp' },
+        ],
+        itemComponent: ExposedPorts,
+        addText: t('Add Exposed Ports'),
+        validator: this.exposedPortValidator,
+        tip: t(
+          'If this parameter is specified, Zun will create a security group with a set of rules to open the ports that should be exposed, and associate the security group to the container.'
+        ),
       },
     ];
   }

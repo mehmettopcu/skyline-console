@@ -19,6 +19,8 @@ import { ContainersStore } from 'stores/barbican/containers';
 import { SecretsStore } from 'stores/barbican/secrets';
 import {
   getCertificateColumns,
+  getInsertHeadersValueFromForm,
+  getListenerInsertHeadersFormItem,
   listenerProtocols,
   sslParseMethod,
 } from 'resources/octavia/lb';
@@ -90,11 +92,14 @@ export class Create extends ModalAction {
       ssl_parsing_method: 'one-way',
       sni_enabled: false,
       connection_limit: -1,
+      admin_state_up: true,
     };
   }
 
   get formItems() {
     const { protocol, ssl_parsing_method, sni_enabled } = this.state;
+
+    const insertHeaderFormItem = getListenerInsertHeadersFormItem();
 
     return [
       {
@@ -199,6 +204,13 @@ export class Create extends ModalAction {
         extra: t('-1 means no connection limit'),
         required: true,
       },
+      {
+        name: 'admin_state_up',
+        label: t('Admin State Up'),
+        type: 'switch',
+        tip: t('Defines the admin state of the listener.'),
+      },
+      insertHeaderFormItem,
     ];
   }
 
@@ -209,12 +221,17 @@ export class Create extends ModalAction {
       default_tls_container_ref,
       client_ca_tls_container_ref,
       sni_container_refs,
+      insert_headers,
       ...rest
     } = values;
     const data = {
       ...rest,
       loadbalancer_id: this.containerProps.detail.id,
     };
+    const insertHeaders = getInsertHeadersValueFromForm(insert_headers);
+    if (insertHeaders) {
+      data.insert_headers = insertHeaders;
+    }
     if (default_tls_container_ref) {
       data.default_tls_container_ref =
         default_tls_container_ref.selectedRows[0].container_ref;

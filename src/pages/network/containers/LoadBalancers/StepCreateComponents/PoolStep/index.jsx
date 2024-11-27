@@ -49,6 +49,12 @@ export class PoolStep extends Base {
     });
   };
 
+  get defaultValue() {
+    return {
+      pool_admin_state_up: true,
+    };
+  }
+
   get formItems() {
     const { pool_lb_algorithm } = this.state;
     return [
@@ -83,6 +89,12 @@ export class PoolStep extends Base {
           });
         },
         required: true,
+      },
+      {
+        name: 'pool_admin_state_up',
+        label: t('Admin State Up'),
+        type: 'switch',
+        tip: t('Defines the admin state of the pool.'),
       },
     ];
   }

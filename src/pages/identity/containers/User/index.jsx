@@ -62,6 +62,14 @@ export class User extends Base {
         isHideable: true,
       },
       {
+        title: t('Default Project ID/Name'),
+        dataIndex: 'defaultProject',
+        isHideable: true,
+        routeName: 'projectDetailAdmin',
+        isLink: true,
+        idKey: 'default_project_id',
+      },
+      {
         title: t('Roles'),
         dataIndex: 'projectRoles',
         isHideable: true,
@@ -111,9 +119,12 @@ export class User extends Base {
         },
       },
       {
-        title: t('Affiliated Domain'),
+        title: t('Affiliated Domain ID/Name'),
         dataIndex: 'domainName',
         isHideable: true,
+        routeName: 'domainDetailAdmin',
+        isLink: true,
+        idKey: 'domain_id',
       },
       {
         title: t('System Roles'),
@@ -167,6 +178,14 @@ export class User extends Base {
   }
 
   get searchFilters() {
+    const domainFilter = this.inDomainDetail
+      ? []
+      : [
+          {
+            label: t('Domain Name'),
+            name: 'domainName',
+          },
+        ];
     return [
       {
         label: t('User Name'),
@@ -181,6 +200,7 @@ export class User extends Base {
         name: 'enabled',
         options: yesNoOptions,
       },
+      ...domainFilter,
     ];
   }
 
@@ -192,10 +212,12 @@ export class User extends Base {
       newParams.groupId = id;
       newParams.withProjectRole = false;
       newParams.withSystemRole = true;
+      newParams.withDefaultProject = true;
     } else if (this.inDomainDetail) {
       newParams.domain_id = id;
       newParams.withProjectRole = false;
       newParams.withSystemRole = true;
+      newParams.withDefaultProject = true;
     } else if (this.inProjectDetail) {
       newParams.projectId = id;
       newParams.withProjectRole = true;
@@ -207,6 +229,7 @@ export class User extends Base {
     } else if (!this.inDetailPage) {
       newParams.withProjectRole = false;
       newParams.withSystemRole = true;
+      newParams.withDefaultProject = true;
     }
     return newParams;
   };

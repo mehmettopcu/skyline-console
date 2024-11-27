@@ -116,11 +116,14 @@ export class ServerStore extends Base {
           noReminder: true,
           all_projects,
         });
-        item.itemInList = result[0];
+        item.itemInList = result.find((it) => it.id === id);
       } else {
         const store = new RecycleBinStore();
-        const result = await store.fetchList({ uuid: id, all_projects });
-        item.itemInList = result[0];
+        const result = await store.fetchList({
+          uuid: id,
+          all_projects,
+        });
+        item.itemInList = result.find((it) => it.id === id);
       }
     } catch (e) {
       // eslint-disable-next-line no-console
@@ -177,6 +180,15 @@ export class ServerStore extends Base {
       ...it,
       tags: (it.origin_data || {}).tags || [],
     }));
+  }
+
+  async fetchLogs(id, tailSize) {
+    const logs = await this.client.action(id, {
+      'os-getConsoleOutput': {
+        length: tailSize,
+      },
+    });
+    return logs;
   }
 
   @action

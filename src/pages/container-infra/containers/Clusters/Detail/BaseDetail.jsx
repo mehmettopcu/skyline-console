@@ -19,16 +19,16 @@ import React from 'react';
 
 export class BaseDetail extends Base {
   get leftCards() {
-    return [this.baseInfoCard, this.miscellaneousCard];
+    return [this.templateCard, this.networkCard, this.miscellaneousCard];
   }
 
   get rightCards() {
     return [this.nodesCard, this.labelCard, this.stackCard];
   }
 
-  get baseInfoCard() {
+  get templateCard() {
     const { template = {} } = this.detailData;
-    const templateUrl = template
+    const templateUrl = template?.name
       ? this.getLinkRender(
           'containerInfraClusterTemplateDetail',
           template.name,
@@ -37,6 +37,7 @@ export class BaseDetail extends Base {
           }
         )
       : '-';
+
     const options = [
       {
         label: t('Name'),
@@ -44,16 +45,8 @@ export class BaseDetail extends Base {
         content: templateUrl,
       },
       {
-        label: t('ID'),
-        dataIndex: 'template.uuid',
-      },
-      {
         label: t('COE'),
         dataIndex: 'template.coe',
-      },
-      {
-        label: t('Image ID'),
-        dataIndex: 'template.image_id',
       },
     ];
 
@@ -65,21 +58,54 @@ export class BaseDetail extends Base {
     };
   }
 
+  get networkCard() {
+    const {
+      fixed_network,
+      original_fixed_network,
+      fixedNetwork: { name: fixedName } = {},
+      fixed_subnet,
+      original_fixed_subnet,
+      fixedSubnet: { name: subName } = {},
+    } = this.detailData || {};
+    const fixedNetworkUrl = original_fixed_network
+      ? `${original_fixed_network} (${t('The resource has been deleted')})`
+      : fixed_network
+      ? this.getLinkRender('networkDetail', fixedName || fixed_network, {
+          id: fixed_network,
+        })
+      : '-';
+    const subnetUrl = original_fixed_subnet
+      ? `${original_fixed_subnet} (${t('The resource has been deleted')})`
+      : fixed_network && fixed_subnet
+      ? this.getLinkRender('subnetDetail', subName || fixed_subnet, {
+          networkId: fixed_network,
+          id: fixed_subnet,
+        })
+      : '-';
+
+    const options = [
+      {
+        label: t('Fixed Network'),
+        content: fixedNetworkUrl,
+      },
+      {
+        label: t('Fixed Subnet'),
+        content: subnetUrl,
+      },
+    ];
+
+    return {
+      title: t('Network'),
+      options,
+    };
+  }
+
   get miscellaneousCard() {
-    const { master_flavor_id, flavor_id, keypair } = this.detailData;
-    const masterFlavorUrl = master_flavor_id
-      ? this.getLinkRender('flavorDetail', master_flavor_id, {
-          id: master_flavor_id,
-        })
-      : '-';
+    const { original_keypair, keypair } = this.detailData;
 
-    const flavorUrl = flavor_id
-      ? this.getLinkRender('flavorDetail', flavor_id, {
-          id: flavor_id,
-        })
-      : '-';
-
-    const keypairUrl = keypair
+    const keypairUrl = original_keypair
+      ? `${original_keypair} (${t('The resource has been deleted')})`
+      : keypair
       ? this.getLinkRender('keypairDetail', keypair, {
           id: keypair,
         })
@@ -105,18 +131,11 @@ export class BaseDetail extends Base {
       {
         label: t('Keypair'),
         content: keypairUrl,
+        hidden: this.isAdminPage,
       },
       {
         label: t('Docker Volume Size (GiB)'),
         dataIndex: 'docker_volume_size',
-      },
-      {
-        label: t('Master Node Flavor ID'),
-        content: masterFlavorUrl,
-      },
-      {
-        label: t('Node Flavor ID'),
-        content: flavorUrl,
       },
       {
         label: t('COE Version'),
@@ -131,17 +150,56 @@ export class BaseDetail extends Base {
     return {
       title: t('Miscellaneous'),
       options,
+      labelCol: 12,
+      contentCol: 12,
     };
   }
 
   get nodesCard() {
+    const {
+      master_flavor_id,
+      original_master_flavor_id,
+      masterFlavor: { name: masterFlavorName } = {},
+      flavor_id,
+      original_flavor_id,
+      flavor: { name: flavorName } = {},
+    } = this.detailData;
+
+    const masterFlavorUrl = original_master_flavor_id
+      ? `${original_master_flavor_id} (${t('The resource has been deleted')})`
+      : master_flavor_id
+      ? this.getLinkRender(
+          'flavorDetail',
+          masterFlavorName || master_flavor_id,
+          {
+            id: master_flavor_id,
+          }
+        )
+      : '-';
+
+    const flavorUrl = original_flavor_id
+      ? `${original_flavor_id} (${t('The resource has been deleted')})`
+      : flavor_id
+      ? this.getLinkRender('flavorDetail', flavorName || flavor_id, {
+          id: flavor_id,
+        })
+      : '-';
+
     const options = [
       {
-        label: t('Master Count'),
+        label: t('Master Node Flavor'),
+        content: masterFlavorUrl,
+      },
+      {
+        label: t('Number of Master Nodes'),
         dataIndex: 'master_count',
       },
       {
-        label: t('Node Count'),
+        label: t('Node Flavor'),
+        content: flavorUrl,
+      },
+      {
+        label: t('Number of Nodes'),
         dataIndex: 'node_count',
       },
       {
@@ -199,10 +257,20 @@ export class BaseDetail extends Base {
   }
 
   get stackCard() {
+    const { stack: { id, stack_name: name } = {} } = this.detailData || {};
+
+    const stackUrl = id
+      ? this.getLinkRender('stackDetail', id, {
+          id,
+          name,
+        })
+      : '-';
+
     const options = [
       {
         label: t('Stack ID'),
         dataIndex: 'stack_id',
+        content: stackUrl,
       },
       {
         label: t('Stack Faults'),
@@ -226,6 +294,37 @@ export class BaseDetail extends Base {
 
     return {
       title: t('Stack'),
+      labelCol: 2,
+      options,
+    };
+  }
+
+  get healthCard() {
+    const { health_status_reason = {} } = this.detailData || {};
+
+    const logContent = !isEmpty(health_status_reason) ? (
+      <ul>
+        {Object.entries(health_status_reason).map(([key, val]) => {
+          return (
+            <li key={key}>
+              {key} : {val}
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      '-'
+    );
+
+    const options = [
+      {
+        label: t('Log'),
+        content: logContent,
+      },
+    ];
+
+    return {
+      title: t('Health Checking Log'),
       labelCol: 2,
       options,
     };

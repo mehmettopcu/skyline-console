@@ -299,7 +299,7 @@ export class ParamSetting extends Base {
       { instanceType }
     );
     const cpuThreadBindTip = t(
-      'It is recommended to set the CPU thread binding policy as thread binding in { instanceType }  instance, which can further improve the CPU performance of instance.',
+      'It is recommended to set the CPU thread binding policy as thread binding in { instanceType } instance, which can further improve the CPU performance of instance.',
       { instanceType }
     );
     const largePageTip = t(
@@ -367,7 +367,7 @@ export class ParamSetting extends Base {
       },
       {
         name: 'bandwidth',
-        label: t('Internal Network Bandwidth(Gbps)'),
+        label: t('Internal Network Bandwidth (Gbps)'),
         type: 'input-int',
         hidden: isBareMetal,
         min: 1,

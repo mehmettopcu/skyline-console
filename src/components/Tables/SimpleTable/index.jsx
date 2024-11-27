@@ -16,7 +16,7 @@ import React from 'react';
 import classnames from 'classnames';
 import PropTypes from 'prop-types';
 import { get, isString, isEmpty, isEqual, has } from 'lodash';
-import { Table } from 'antd';
+import { Table, Typography } from 'antd';
 import {
   getColumnSorter,
   getSortOrder,
@@ -32,6 +32,8 @@ import {
 } from 'utils/table';
 import { getNoValue } from 'utils/index';
 import styles from './index.less';
+
+const { Paragraph } = Typography;
 
 export default class SimpleTable extends React.Component {
   static propTypes = {
@@ -89,6 +91,7 @@ export default class SimpleTable extends React.Component {
         linkPrefix,
         valueMap,
         unit,
+        copyable,
         ...rest
       } = column;
       if (column.key === 'operation') {
@@ -122,6 +125,14 @@ export default class SimpleTable extends React.Component {
       }
       if (dataIndex === 'cost' || isPrice) {
         newRender = this.getPriceRender(newRender, column);
+      }
+      if (copyable) {
+        newRender = (value) => {
+          if (value && value !== '-') {
+            return <Paragraph copyable>{value}</Paragraph>;
+          }
+          return '-';
+        };
       }
       const newColumn = {
         ...rest,
@@ -171,7 +182,7 @@ export default class SimpleTable extends React.Component {
     }
     return (value) => {
       const valueStr = isString(value) ? value : (value || 0).toFixed(2);
-      return <span style={{ color: '#f50' }}>{valueStr}</span>;
+      return <span style={{ color: globalCSS.moneyColor }}>{valueStr}</span>;
     };
   };
 
@@ -283,7 +294,11 @@ export default class SimpleTable extends React.Component {
     const dataSource = this.getDataSource();
     return (
       <Table
-        className={classnames(styles['sl-simple-table'], className)}
+        className={classnames(
+          styles['sl-simple-table'],
+          'sl-simple-table',
+          className
+        )}
         columns={currentColumns}
         dataSource={dataSource}
         loading={isLoading}

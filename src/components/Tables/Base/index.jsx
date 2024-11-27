@@ -98,6 +98,7 @@ export class BaseTable extends React.Component {
     primaryActionsExtra: PropTypes.any,
     isAdminPage: PropTypes.bool,
     containerProps: PropTypes.any,
+    middleComponentInHeader: PropTypes.node,
   };
 
   static defaultProps = {
@@ -336,7 +337,7 @@ export class BaseTable extends React.Component {
     }
     return (value) => {
       const valueStr = isString(value) ? value : (value || 0).toFixed(2);
-      return <span style={{ color: '#f50' }}>{valueStr}</span>;
+      return <span style={{ color: globalCSS.moneyColor }}>{valueStr}</span>;
     };
   };
 
@@ -653,6 +654,14 @@ export class BaseTable extends React.Component {
     );
   }
 
+  renderMiddleInHeader() {
+    const { middleComponentInHeader } = this.props;
+    if (middleComponentInHeader) {
+      return middleComponentInHeader;
+    }
+    return null;
+  }
+
   renderActions() {
     const {
       isAdminPage,
@@ -779,19 +788,29 @@ export class BaseTable extends React.Component {
       <div className={styles['table-header']} id="sl-table-header-search">
         <div
           className={classnames(
-            styles['table-header-btns'],
-            'table-header-btns'
+            styles['table-header-action-btns'],
+            'table-header-action-btns'
           )}
         >
-          {this.renderRefresh()}
           {this.renderActions()}
           {this.renderBatchActions()}
-          {this.renderCustomButton()}
-          {this.renderDownload()}
-          {this.renderRefreshAuto()}
         </div>
         {this.renderTimeFilter()}
-        {this.renderSearch()}
+        {this.renderMiddleInHeader()}
+        <div className={styles['table-header-right']}>
+          {this.renderSearch()}
+          <div
+            className={classnames(
+              styles['table-header-btns'],
+              'table-header-btns'
+            )}
+          >
+            {this.renderRefresh()}
+            {this.renderDownload()}
+            {this.renderCustomButton()}
+            {this.renderRefreshAuto()}
+          </div>
+        </div>
       </div>
     );
   }

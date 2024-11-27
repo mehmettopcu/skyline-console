@@ -15,11 +15,12 @@ import { message as $message } from 'antd';
 import { StepAction } from 'src/containers/Action';
 import globalContainersStore from 'stores/zun/containers';
 import globalProjectStore from 'stores/keystone/project';
+import { isEmpty } from 'lodash';
 import StepInfo from './StepInfo';
 import StepSpec from './StepSpec';
 import StepVolumes from './StepVolumes';
 import StepNetworks from './StepNetworks';
-import StepMiscellaneous from './StepMiscellaneous';
+import StepOthers from './StepOthers';
 
 export class StepCreate extends StepAction {
   init() {
@@ -34,7 +35,7 @@ export class StepCreate extends StepAction {
 
   static title = t('Create Container');
 
-  static path = '/container/containers/create';
+  static path = '/container-service/containers/create';
 
   static policy = 'container:create';
 
@@ -75,8 +76,8 @@ export class StepCreate extends StepAction {
         component: StepNetworks,
       },
       {
-        title: t('Miscellaneous'),
-        component: StepMiscellaneous,
+        title: t('Others'),
+        component: StepOthers,
       },
     ];
   }
@@ -123,7 +124,7 @@ export class StepCreate extends StepAction {
       ...cpu,
       add: canAdd ? cpuCount : 0,
       name: 'cpu',
-      title: t('CPU'),
+      title: t('Containers CPU'),
       type: 'line',
     };
 
@@ -131,7 +132,7 @@ export class StepCreate extends StepAction {
       ...memory,
       add: canAdd ? memoryCount : 0,
       name: 'memory',
-      title: t('Memory (MiB)'),
+      title: t('Containers Memory (MiB)'),
       type: 'line',
     };
 
@@ -139,7 +140,7 @@ export class StepCreate extends StepAction {
       ...disk,
       add: canAdd ? diskCount : 0,
       name: 'disk',
-      title: t('Disk (GiB)'),
+      title: t('Containers Disk (GiB)'),
       type: 'line',
     };
 
@@ -166,7 +167,7 @@ export class StepCreate extends StepAction {
     }
     if (input > left) {
       return t(
-        'Insufficient {name} quota to create resources(left { quota }, input { input }).',
+        'Insufficient {name} quota to create resources (left { quota }, input { input }).',
         { name, quota: left, input }
       );
     }
@@ -222,99 +223,151 @@ export class StepCreate extends StepAction {
 
   onSubmit = (values) => {
     const {
+      exposedPorts,
       environmentVariables,
       labels,
       mounts,
-      images,
+      image_driver,
+      imageDocker,
+      imageGlance,
       exitPolicy,
       maxRetry,
       networks,
       ports,
       hints,
       securityGroup,
+      healthcheck,
+      healthcheck_cmd,
+      healthcheck_interval,
+      healthcheck_retries,
+      healthcheck_timeout,
+      command,
+      entrypoint,
       ...rest
     } = values;
 
-    const requestEnvironment = {};
-    const requestLabels = {};
-    const requestVolumes = [];
-    const requestHints = {};
+    const body = {
+      image_driver,
+      ...rest,
+    };
+
+    const requestExposedPorts = {};
     const nets = [];
-    const securityGroups = [];
 
-    if (environmentVariables) {
-      environmentVariables.forEach((item) => {
-        const labelKey = item.value.key.toLowerCase().trim();
-        const labelValue = item.value.value.toLowerCase().trim();
-        requestEnvironment[labelKey] = labelValue;
+    if (exposedPorts && exposedPorts.length) {
+      exposedPorts.forEach((item) => {
+        const key = `${item.value.port}/${item.value.protocol}`;
+        requestExposedPorts[key] = {};
       });
+      body.exposed_ports = requestExposedPorts;
     }
 
-    if (labels) {
-      labels.forEach((item) => {
-        const key = item.value.key.toLowerCase().trim();
-        const value = item.value.value.toLowerCase().trim();
-        requestLabels[key] = value;
-      });
+    if (environmentVariables && environmentVariables.length) {
+      const requestEnvironment = environmentVariables.reduce(
+        (result, current) => {
+          const labelKey = current.value.key;
+          const labelValue = current.value.value;
+          result[labelKey] = labelValue;
+          return result;
+        },
+        {}
+      );
+      body.environment = requestEnvironment;
     }
 
-    if (mounts) {
-      mounts.forEach((item) => {
-        const { type, source, size, destination, isNewVolume } = item.value;
+    if (labels && labels.length) {
+      const requestLabels = labels.reduce((result, current) => {
+        const { key } = current.value;
+        const { value } = current.value;
+        result[key] = value;
+        return result;
+      }, {});
+      body.labels = requestLabels;
+    }
+
+    if (mounts && mounts.length) {
+      const requestVolumes = mounts.reduce((result, current) => {
+        const { type, source, size, destination, isNewVolume } = current.value;
         if (isNewVolume) {
-          requestVolumes.push({
+          result.push({
             type,
             size,
             destination,
           });
         } else {
-          requestVolumes.push({
+          result.push({
             type,
             source,
             destination,
           });
         }
-      });
+        return result;
+      }, []);
+      body.mounts = requestVolumes;
     }
 
-    if (networks) {
-      (networks.selectedRowKeys || []).forEach((it) => {
+    if (networks && networks.selectedRowKeys.length) {
+      networks.selectedRowKeys.forEach((it) => {
         nets.push({ network: it });
       });
+      body.nets = nets;
     }
 
-    if (ports) {
-      (ports.selectedRowKeys || []).forEach((it) => {
+    if (ports && ports.selectedRowKeys.length) {
+      ports.selectedRowKeys.forEach((it) => {
         nets.push({ port: it });
       });
+      body.nets = nets;
     }
 
-    if (securityGroup) {
-      (securityGroup.selectedRows || []).forEach((it) => {
-        securityGroups.push(it.name);
-      });
+    if (hints && hints.length) {
+      const requestHints = hints.reduce((result, current) => {
+        const { key } = current.value;
+        const { value } = current.value;
+        result[key] = value;
+        return result;
+      }, {});
+      body.hints = requestHints;
     }
 
-    if (hints) {
-      hints.forEach((item) => {
-        const key = item.value.key.toLowerCase().trim();
-        const value = item.value.value.toLowerCase().trim();
-        requestHints[key] = value;
-      });
+    if (
+      securityGroup &&
+      securityGroup.selectedRows.length &&
+      isEmpty(requestExposedPorts)
+    ) {
+      const securityGroups = securityGroup.selectedRows.reduce(
+        (result, current) => {
+          result.push(current.name);
+          return result;
+        },
+        []
+      );
+      body.security_groups = securityGroups;
     }
 
-    const body = {
-      environment: requestEnvironment,
-      labels: requestLabels,
-      mounts: requestVolumes,
-      hints: requestHints,
-      nets,
-      security_groups: securityGroups,
-      ...rest,
-    };
+    if (healthcheck) {
+      body.healthcheck = {
+        cmd: healthcheck_cmd,
+        interval: healthcheck_interval,
+        retries: healthcheck_retries,
+        timeout: healthcheck_timeout,
+      };
+    }
 
-    if (images) {
-      body.image = (images.selectedRows[0] || {}).name;
+    if (command) {
+      body.command = [command];
+    }
+
+    if (entrypoint) {
+      body.entrypoint = [entrypoint];
+    }
+
+    if (imageDocker && image_driver === 'docker') {
+      body.image = imageDocker;
+    }
+
+    if (imageGlance && image_driver === 'glance') {
+      body.image = imageGlance.selectedRowKeys[0];
     }
 
     if (exitPolicy) {

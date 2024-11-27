@@ -7,8 +7,7 @@ env:
   password: passW0rdY_
   usernameAdmin: e2e-admin
   passwordAdmin: passW0rdY_
-  userIsRegisted: true
-  imageName: cirros-0.5.2-x86_64-disk
+  imageName: cirros
   imageType: Others
   imageDownloadUrl: http://download.cirros-cloud.net/0.5.1/cirros-0.5.1-x86_64-disk.img
   imageCanChangePassword: false
@@ -16,6 +15,7 @@ env:
     - neutron::qos
     - neutron::vpn
     - neutron::port-forwarding
+    - neutron::firewall
     - octavia
 testFiles:
   # network
@@ -27,4 +27,7 @@ testFiles:
   - pages/network/security-group.spec.js
   - pages/network/vpn.spec.js
   - pages/network/lb.spec.js
+  - pages/network/firewall.spec.js
+  - pages/network/firewall-policy.spec.js
+  - pages/network/firewall-rule.spec.js
   # - pages/network/topology.spec.js

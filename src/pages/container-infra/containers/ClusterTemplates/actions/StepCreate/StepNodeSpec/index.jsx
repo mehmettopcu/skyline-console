@@ -12,18 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from 'react';
 import { inject, observer } from 'mobx-react';
+import { toJS } from 'mobx';
 import Base from 'components/Form';
-import globalImageStore from 'src/stores/glance/image';
-import globalKeypairStore from 'src/stores/nova/keypair';
-import FlavorSelectTable from 'src/pages/compute/containers/Instance/components/FlavorSelectTable';
+import { ImageStore } from 'stores/glance/image';
+import globalKeypairStore from 'stores/nova/keypair';
+import { FlavorStore } from 'src/stores/nova/flavor';
 import { getImageColumns } from 'resources/glance/image';
+import { getKeyPairHeader } from 'resources/nova/keypair';
+import { getBaseSimpleFlavorColumns } from 'resources/magnum/template';
+import { allSettled } from 'utils';
 
 export class StepNodeSpec extends Base {
   init() {
-    this.getImageList();
-    this.getKeypairs();
+    this.imageStore = new ImageStore();
+    this.keyPairStore = globalKeypairStore;
+    this.flavorStore = new FlavorStore();
+    this.masterFlavorStore = new FlavorStore();
+    this.getAllInitFunctions();
   }
 
   get title() {
@@ -42,17 +48,42 @@ export class StepNodeSpec extends Base {
     return !!this.props.extra;
   }
 
-  async getImageList() {
-    await globalImageStore.fetchList({ all_projects: this.hasAdminRole });
+  async getAllInitFunctions() {
+    await allSettled([
+      this.getImageList(),
+      this.getKeypairs(),
+      this.getFlavors(),
+      this.getMasterFlavors(),
+    ]);
     this.updateDefaultValue();
   }
 
-  async getKeypairs() {
-    await globalKeypairStore.fetchList();
+  getImageList() {
+    return this.imageStore.fetchList({ all_projects: this.hasAdminRole });
+  }
+
+  getKeypairs() {
+    return this.keyPairStore.fetchList();
   }
 
   get keypairs() {
-    return globalKeypairStore.list.data || [];
+    return this.keyPairStore.list.data || [];
+  }
+
+  getFlavors() {
+    return this.flavorStore.fetchList();
+  }
+
+  getMasterFlavors() {
+    return this.masterFlavorStore.fetchList();
+  }
+
+  get flavors() {
+    return toJS(this.flavorStore.list.data) || [];
+  }
+
+  get masterFlavors() {
+    return toJS(this.masterFlavorStore.list.data) || [];
   }
 
   get acceptedImageOs() {
@@ -73,7 +104,7 @@ export class StepNodeSpec extends Base {
   }
 
   get imageList() {
-    return (globalImageStore.list.data || []).filter((it) => {
+    return (this.imageStore.list.data || []).filter((it) => {
       const { originData: { os_distro } = {} } = it;
       return this.acceptedImageOs.includes(os_distro);
     });
@@ -89,12 +120,6 @@ export class StepNodeSpec extends Base {
     }
     return acceptedVolumeDriver;
   }
-
-  onFlavorChange = (value) => {
-    this.updateContext({
-      flavor: value,
-    });
-  };
 
   get defaultValue() {
     let values = {};
@@ -117,16 +142,24 @@ export class StepNodeSpec extends Base {
         docker_volume_size,
       };
       if (flavor_id) {
-        values.flavor = { selectedRowKeys: [flavor_id] };
+        values.flavor = {
+          selectedRowKeys: [flavor_id],
+          selectedRows: this.flavors.filter((it) => it.id === flavor_id),
+        };
       }
       if (master_flavor_id) {
-        values.masterFlavor = { selectedRowKeys: [master_flavor_id] };
+        values.masterFlavor = {
+          selectedRowKeys: [master_flavor_id],
+          selectedRows: this.masterFlavors.filter(
+            (it) => it.id === master_flavor_id
+          ),
+        };
       }
       if (image_id) {
         values.images = { selectedRowKeys: [image_id] };
       }
       if (keypair_id) {
-        values.keypairs = { selectedRowKeys: [keypair_id] };
+        values.keypair = { selectedRowKeys: [keypair_id] };
       }
     }
     return values;
@@ -142,6 +175,8 @@ export class StepNodeSpec extends Base {
   }
 
   get formItems() {
+    const { initKeyPair } = this.state;
+
     return [
       {
         name: 'images',
@@ -149,7 +184,7 @@ export class StepNodeSpec extends Base {
         type: 'select-table',
         data: this.imageList,
         required: true,
-        isLoading: globalImageStore.list.isLoading,
+        isLoading: this.imageStore.list.isLoading,
         filterParams: [
           {
             label: t('Name'),
@@ -159,11 +194,13 @@ export class StepNodeSpec extends Base {
         columns: this.imageColumns,
       },
       {
-        name: 'keypairs',
+        name: 'keypair',
         label: t('Keypair'),
         type: 'select-table',
         data: this.keypairs,
-        isLoading: globalKeypairStore.list.isLoading,
+        initValue: initKeyPair,
+        isLoading: this.keyPairStore.list.isLoading,
+        header: getKeyPairHeader(this),
         tip: t(
           'The SSH key is a way to remotely log in to the cluster instance. The cloud platform only helps to keep the public key. Please keep your private key properly.'
         ),
@@ -188,13 +225,29 @@ export class StepNodeSpec extends Base {
         name: 'flavor',
         label: t('Flavor of Nodes'),
         type: 'select-table',
-        component: <FlavorSelectTable onChange={this.onFlavorChange} />,
+        data: this.flavors,
+        columns: getBaseSimpleFlavorColumns(this),
+        isLoading: this.flavorStore.list.isLoading,
+        filterParams: [
+          {
+            label: t('Name'),
+            name: 'name',
+          },
+        ],
       },
       {
         name: 'masterFlavor',
         label: t('Flavor of Master Nodes'),
         type: 'select-table',
-        component: <FlavorSelectTable onChange={this.onFlavorChange} />,
+        data: this.masterFlavors,
+        columns: getBaseSimpleFlavorColumns(this),
+        isLoading: this.masterFlavorStore.list.isLoading,
+        filterParams: [
+          {
+            label: t('Name'),
+            name: 'name',
+          },
+        ],
       },
       {
         name: 'volume_driver',

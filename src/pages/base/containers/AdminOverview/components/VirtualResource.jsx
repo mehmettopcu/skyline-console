@@ -31,9 +31,9 @@ export const resourceCircle = [
 ];
 
 export const color = {
-  infoColor: 'rgba(0, 104, 255, 0.65)',
-  warnColor: '#FE9901',
-  dangerColor: '#D93126',
+  infoColor: globalCSS.primaryColor,
+  warnColor: globalCSS.warnDarkColor,
+  dangerColor: globalCSS.errorColor,
 };
 
 export class ResourceCircle extends Component {

@@ -13,37 +13,22 @@
 // limitations under the License.
 
 import { inject, observer } from 'mobx-react';
-import globalListenerStore from 'stores/octavia/listener';
 import Base from 'containers/BaseDetail';
-import { HealthMonitorStore } from 'stores/octavia/health-monitor';
+import { getInsertHeaderCard } from 'resources/octavia/lb';
+import { isEmpty } from 'lodash';
+import { algorithmDict } from 'resources/octavia/pool';
 
 export class BaseDetail extends Base {
-  componentDidMount() {
-    this.fetchData();
-    const { default_pool: { healthmonitor_id } = {} } = this.detailData;
-    if (healthmonitor_id) {
-      this.fetchHealthMonitor();
-    }
-  }
-
-  get shouldFetchDetail() {
-    return true;
-  }
-
-  init() {
-    this.store = globalListenerStore;
-    this.healthmonitorStore = new HealthMonitorStore();
-  }
-
-  fetchHealthMonitor = async () => {
-    const {
-      default_pool: { healthmonitor_id },
-    } = this.detailData;
-    await this.healthmonitorStore.fetchDetail({ id: healthmonitor_id });
-  };
-
   get leftCards() {
-    return [this.PoolInfo, this.healthMonitor];
+    const cards = [this.poolCard];
+    const { insert_headers = {}, default_pool_id } = this.detailData;
+    if (default_pool_id) {
+      cards.push(this.healthMonitor);
+    }
+    if (!isEmpty(insert_headers)) {
+      cards.push(this.customHeaders);
+    }
+    return cards;
   }
 
   get rightCards() {
@@ -54,63 +39,87 @@ export class BaseDetail extends Base {
     return [];
   }
 
-  get PoolInfo() {
-    const { default_pool = {} } = this.detailData || {};
-    const { name, protocol, lb_algorithm, description } = default_pool;
-    const options = [
-      {
-        label: t('Name'),
-        content: name || '-',
-      },
-      {
-        label: t('Protocol'),
-        content: protocol || '-',
-      },
-      {
-        label: t('LB Algorithm'),
-        content: lb_algorithm || '-',
-      },
-      {
-        label: t('Description'),
-        content: description || '-',
-      },
-    ];
+  get poolCard() {
+    const { default_pool = {}, default_pool_id } = this.detailData || {};
+    const { name, protocol, lb_algorithm, description, admin_state_up } =
+      default_pool;
+    const options = !default_pool_id
+      ? [
+          {
+            label: '',
+            content: t('No default pool set'),
+          },
+        ]
+      : [
+          {
+            label: t('Name'),
+            content: name || '-',
+          },
+          {
+            label: t('Protocol'),
+            content: protocol || '-',
+          },
+          {
+            label: t('LB Algorithm'),
+            content: algorithmDict[lb_algorithm] || lb_algorithm || '-',
+          },
+          {
+            label: t('Admin State Up'),
+            content: admin_state_up ? t('On') : t('Off'),
+          },
+          {
+            label: t('Description'),
+            content: description || '-',
+          },
+        ];
     return {
       title: t('Pool Info'),
       options,
     };
   }
 
+  get customHeaders() {
+    const { insert_headers = {} } = this.detailData || {};
+    return getInsertHeaderCard(insert_headers || {});
+  }
+
   get healthMonitor() {
-    const healthmonitor = this.healthmonitorStore.detail || {};
-    const { admin_state_up, type, delay, timeout, max_retries } = healthmonitor;
+    const healthMonitor = this.detailData.healthMonitor || {};
+    const { type, delay, timeout, max_retries, admin_state_up } = healthMonitor;
     const options = [
       {
-        label: t('Enable HealthMonitor'),
-        content: admin_state_up ? t('Yes') : t('No'),
-      },
-      {
-        label: t('HealthMonitor Type'),
-        content: admin_state_up ? type : '-',
-      },
-      {
-        label: t('Delay Interval(s)'),
-        content: admin_state_up ? delay : '-',
-      },
-      {
-        label: t('Timeout(s)'),
-        content: admin_state_up ? timeout : '-',
-      },
-      {
-        label: t('Max Retries'),
-        content: admin_state_up ? max_retries : '-',
+        label: t('Enable Health Monitor'),
+        content: !isEmpty(healthMonitor) ? t('Yes') : t('No'),
       },
     ];
-    if (Object.keys(healthmonitor).length === 0) {
-      options[0].content = '-';
+    if (!isEmpty(healthMonitor)) {
+      options.push(
+        ...[
+          {
+            label: t('Health Monitor Type'),
+            content: type,
+          },
+          {
+            label: t('Delay Interval(s)'),
+            content: delay,
+          },
+          {
+            label: t('Timeout(s)'),
+            content: timeout,
+          },
+          {
+            label: t('Max Retries'),
+            content: max_retries,
+          },
+          {
+            label: t('Admin State Up'),
+            content: admin_state_up ? t('On') : t('Off'),
+          },
+        ]
+      );
     }
     return {
-      title: t('HealthMonitor'),
+      title: t('Health Monitor'),
       options,
     };
   }

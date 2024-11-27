@@ -15,7 +15,7 @@
 import React, { Component } from 'react';
 import { Select, Button, Input } from 'antd';
 import { PlusCircleFilled, MinusCircleFilled } from '@ant-design/icons';
-import { isArray, isEqual, isEmpty } from 'lodash';
+import { isArray, isEqual, isEmpty, isFunction } from 'lodash';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import { generateId } from 'utils/index';
@@ -36,6 +36,8 @@ export default class index extends Component {
     optionsByIndex: PropTypes.bool, // special: index=0, use [options[0]]; index=1 use [options[1]]; index >= options.length, options
     initValue: PropTypes.array,
     readonlyKeys: PropTypes.array,
+    disableEditKeys: PropTypes.array,
+    disabledRemoveFunc: PropTypes.func,
   };
 
   static defaultProps = {
@@ -48,6 +50,8 @@ export default class index extends Component {
     optionsByIndex: false,
     initValue: [],
     readonlyKeys: [],
+    disableEditKeys: [],
+    disabledRemoveFunc: null,
   };
 
   constructor(props) {
@@ -108,9 +112,10 @@ export default class index extends Component {
   };
 
   // eslint-disable-next-line no-shadow
-  canRemove = (index) => {
+  canRemove = (index, item) => {
+    const isDisabledKey = this.checkItemRemoveDisabled(item);
     const { minCount } = this.props;
-    return index >= minCount;
+    return index >= minCount && !isDisabledKey;
   };
 
   // eslint-disable-next-line no-shadow
@@ -152,6 +157,22 @@ export default class index extends Component {
     return options;
   };
 
+  checkItemRemoveDisabled = (item) => {
+    const { items = [] } = this.state;
+    const { disabledRemoveFunc } = this.props;
+    if (isFunction(disabledRemoveFunc)) {
+      return disabledRemoveFunc({ item, items });
+    }
+    return this.checkDisabledKey(item);
+  };
+
+  checkDisabledKey = (item) => {
+    const { key = '' } = item.value || {};
+    const { disableEditKeys = [] } = this.props;
+    const isDisabledKey = disableEditKeys.indexOf(key) >= 0;
+    return isDisabledKey;
+  };
+
   renderTip() {
     const { tips } = this.props;
     if (tips) {
@@ -174,7 +195,7 @@ export default class index extends Component {
         return (
           <Input
             value={item.value}
-            placeholder={t('Please input')}
+            placeholder={placeholder || t('Please input')}
             style={{ width }}
             onChange={(e) => {
               this.onItemChange(e.currentTarget.value, index);
@@ -198,6 +219,7 @@ export default class index extends Component {
     const ItemComponent = itemComponent;
     const { key = '' } = item.value || {};
     const keyReadonly = readonlyKeys.indexOf(key) >= 0;
+    const isDisabledKey = this.checkItemRemoveDisabled(item);
     return (
       <ItemComponent
         {...this.props}
@@ -205,6 +227,7 @@ export default class index extends Component {
         value={item.value}
         index={index}
         keyReadonly={keyReadonly}
+        disabled={isDisabledKey}
         onChange={(newValue) => {
           this.onItemChange(newValue, index);
         }}
@@ -221,7 +244,7 @@ export default class index extends Component {
           type="link"
           onClick={() => this.removeItem(index)}
           className={classnames(styles.float, styles['remove-btn'])}
-          disabled={!this.canRemove(index)}
+          disabled={!this.canRemove(index, it)}
         >
           <MinusCircleFilled />
         </Button>

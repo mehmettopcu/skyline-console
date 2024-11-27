@@ -58,12 +58,13 @@ export const getRouterColumns = (self) => [
     sorter: false,
   },
   {
-    title: t('External Network'),
-    dataIndex: 'externalNetworkId',
+    title: t('External Network ID/Name'),
+    dataIndex: 'externalNetworkName',
     isHideable: true,
     sorter: false,
-    render: (value) =>
-      self.getLinkRender('networkDetail', value, { id: value }),
+    isLink: true,
+    idKey: 'externalNetworkId',
+    routeName: self.getRouteName('networkDetail'),
   },
   {
     title: t('External Fixed IP'),

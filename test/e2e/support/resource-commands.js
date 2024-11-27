@@ -27,6 +27,7 @@ import urlMap, {
   projectListUrl,
   settingUrl,
   flavorListUrl,
+  firewallListUrl,
 } from './constants';
 
 Cypress.Commands.add('createInstance', ({ name, networkName }) => {
@@ -34,7 +35,7 @@ Cypress.Commands.add('createInstance', ({ name, networkName }) => {
   const imageName = Cypress.env('imageName');
   const imageType = Cypress.env('imageType');
   cy.visitPage(instanceListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .wait(8000)
     .formTableSelect('flavor')
     .formRadioChooseByLabel('image', imageType)
@@ -48,6 +49,7 @@ Cypress.Commands.add('createInstance', ({ name, networkName }) => {
     .clickStepActionNextButton()
     .formInput('name', name)
     .formRadioChoose('loginType', 1)
+    .formInput('username', 'root')
     .formInput('password', password)
     .formInput('confirmPassword', password)
     .wait(2000)
@@ -64,7 +66,7 @@ Cypress.Commands.add('createInstance', ({ name, networkName }) => {
 Cypress.Commands.add('createNetwork', ({ name }) => {
   const cidr = `10.10.${Cypress._.random(50, 100)}.0/24`;
   cy.visitPage(networkListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .wait(2000)
     .formInput('name', name)
     .formSelect('availableZone')
@@ -77,7 +79,7 @@ Cypress.Commands.add('createNetwork', ({ name }) => {
 
 Cypress.Commands.add('createNetworkPolicy', ({ name }) => {
   cy.visitPage(policyListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .formInput('name', name)
     .formText('description', name)
     // .formSelect('project_id', 'admin')
@@ -87,7 +89,7 @@ Cypress.Commands.add('createNetworkPolicy', ({ name }) => {
 
 Cypress.Commands.add('createRouter', ({ name, network }) => {
   cy.visitPage(routerListUrl)
-    .clickHeaderButton(1, 5000)
+    .clickHeaderActionButton(0, 5000)
     .formInput('name', name)
     .formCheckboxClick('openExternalNetwork')
     .wait(2000)
@@ -159,6 +161,7 @@ Cypress.Commands.add(
       .clickStepActionNextButton()
       .formInput('name', name)
       .formRadioChoose('loginType', 1)
+      .formInput('username', 'root')
       .formInput('password', password)
       .formInput('confirmPassword', password)
       .clickStepActionNextButton()
@@ -183,7 +186,7 @@ Cypress.Commands.add('createVolume', (name) => {
 
 Cypress.Commands.add('createSecurityGroup', ({ name }) => {
   cy.visitPage(securityGroupListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .formInput('name', name)
     .clickModalActionSubmitButton();
 });
@@ -192,7 +195,7 @@ Cypress.Commands.add('createFip', () => {
   cy.intercept('GET', '/networks').as('networks');
   cy.visitPage(fipListUrl)
     .wait(2000)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .wait('@networks')
     .formSelect('floating_network_id')
     .clickModalActionSubmitButton();
@@ -200,7 +203,7 @@ Cypress.Commands.add('createFip', () => {
 
 Cypress.Commands.add('createUserGroup', ({ name }) => {
   cy.visitPage(userGroupListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .formInput('name', name)
     .clickModalActionSubmitButton();
 });
@@ -211,7 +214,7 @@ Cypress.Commands.add('createUser', ({ name }) => {
   const phone = '18500000000';
   const password = 'passW0rd_';
   cy.visitPage(userListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .wait(2000)
     .formInput('name', name)
     .formInput('email', email)
@@ -222,12 +225,12 @@ Cypress.Commands.add('createUser', ({ name }) => {
     .formInput('real_name', name)
     .clickFormActionSubmitButton()
     .tableSearchText(name)
-    .waitStatusGreen(7);
+    .waitStatusGreen(8);
 });
 
 Cypress.Commands.add('createProject', ({ name }) => {
   cy.visitPage(projectListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .formInput('name', name)
     .clickModalActionSubmitButton();
 });
@@ -249,7 +252,7 @@ Cypress.Commands.add('createIronicFlavor', (name) => {
   cy.setAllFlavorType();
   cy.visitPage(flavorListUrl)
     .clickTab('Bare Metal', 'bare_metal')
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .formRadioChoose('category', 0)
     .formInput('name', name)
     .clickStepActionNextButton()
@@ -260,7 +263,7 @@ Cypress.Commands.add('createIronicFlavor', (name) => {
 Cypress.Commands.add('createIronicImage', ({ name }) => {
   const filename = 'cirros-0.4.0-x86_64-disk.qcow2';
   cy.visitPage(imageListUrl)
-    .clickHeaderButton(1)
+    .clickHeaderActionButton(0)
     .formInput('name', name)
     .formAttachFile('file', filename)
     .formSelect('disk_format', 'QCOW2 - QEMU Emulator')
@@ -293,3 +296,41 @@ Cypress.Commands.add('deleteAll', (resourceName, name, tab) => {
     cy.clickHeaderConfirmButtonByTitle('Delete');
   }
 });
+
+Cypress.Commands.add(
+  'createFirewallRule',
+  ({
+    name,
+    protocol = 'TCP', // TCP UDP ICMP ANY
+    ruleAction = 'ALLOW', // ALLOW  DENY  REJECT
+    ipVersion = 'IPv4', // IPv4 IPv6
+    enabled = true,
+  }) => {
+    cy.visit(firewallListUrl)
+      .wait(5000)
+      .clickTab('Firewall Rules')
+      .clickHeaderActionButton(0)
+      .wait(2000)
+      .formInput('name', name)
+      .formRadioChooseByLabel('protocol', protocol)
+      .formSelect('action', ruleAction)
+      .formRadioChooseByLabel('ip_version', ipVersion);
+    if (!enabled) cy.formCheckboxClick('options', 0); // Enabled: default is checked
+    cy.clickFormActionSubmitButton();
+  }
+);
+
+Cypress.Commands.add(
+  'createFirewallPolicy',
+  ({ name, enableShared = false, enableAudited = false }) => {
+    cy.visit(firewallListUrl)
+      .wait(5000)
+      .clickTab('Firewall Policies')
+      .clickHeaderActionButton(0)
+      .wait(2000)
+      .formInput('name', name);
+    if (enableShared) cy.formCheckboxClick('options', 0); // Shared
+    if (enableAudited) cy.formCheckboxClick('options', 1); // Audited
+    cy.clickModalActionSubmitButton();
+  }
+);

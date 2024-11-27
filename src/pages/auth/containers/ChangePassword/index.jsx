@@ -86,9 +86,8 @@ export class Password extends Component {
         rootStore.routing.push('/auth/login');
       },
       (err) => {
-        const {
-          reason: { message },
-        } = err;
+        const { response: { data: { error: { message } = {} } = {} } = {} } =
+          err;
         this.setState({
           error: true,
           message,
@@ -138,7 +137,7 @@ export class Password extends Component {
         name: 'hint',
         render: () => (
           <div className={styles.hint}>
-            <InfoCircleFilled style={{ color: '#FAAD14' }} />
+            <InfoCircleFilled style={{ color: globalCSS.warnColor }} />
             {t('User need to change password')}
           </div>
         ),

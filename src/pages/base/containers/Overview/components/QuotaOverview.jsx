@@ -19,13 +19,14 @@ import { inject, observer } from 'mobx-react';
 import globalVolumeTypeStore from 'stores/cinder/volume-type';
 import globalProjectStore from 'stores/keystone/project';
 import globalRootStore from 'stores/root';
+import { firewallEndpoint } from 'client/client/constants';
 import { isNumber } from 'lodash';
 import styles from '../style.less';
 
 const colors = {
-  normal: { color: '#4CC9F0', text: t('Normal') },
-  danger: { color: '#4361EE', text: t('Danger') },
-  full: { color: '#E8684A', text: t('Full') },
+  normal: { color: globalCSS.primaryColor, text: t('Normal') },
+  danger: { color: globalCSS.warnDarkColor, text: t('Danger') },
+  full: { color: globalCSS.errorColor, text: t('Full') },
 };
 
 const keyPairTitle = (
@@ -36,6 +37,23 @@ const keyPairTitle = (
     </Tooltip>
   </span>
 );
+
+const firewallQuota = firewallEndpoint()
+  ? [
+      {
+        text: t('Firewalls'),
+        key: 'firewall_group',
+      },
+      {
+        text: t('Firewall Policies'),
+        key: 'firewall_policy',
+      },
+      {
+        text: t('Firewall Rules'),
+        key: 'firewall_rule',
+      },
+    ]
+  : [];
 
 export const quotaCardList = [
   {
@@ -86,6 +104,7 @@ export const quotaCardList = [
       { text: t('Ports'), key: 'port' },
       { text: t('Security Groups'), key: 'security_group' },
       { text: t('Security Group Rules'), key: 'security_group_rule' },
+      ...firewallQuota,
     ],
   },
 ];
@@ -112,9 +131,20 @@ export const zunQuotaCard = {
       text: t('Containers'),
       key: 'zun_containers',
     },
-    { text: t('CPUs'), key: 'zun_cpu' },
-    { text: t('Memory (MiB)'), key: 'zun_memory' },
+    { text: t('Containers CPU'), key: 'zun_cpu' },
+    { text: t('Containers Memory (MiB)'), key: 'zun_memory' },
     { text: t('Containers Disk (GiB)'), key: 'zun_disk' },
+  ],
+};
+
+export const magnumQuotaCard = {
+  text: t('Clusters Management'),
+  type: 'magnum',
+  value: [
+    {
+      text: t('Clusters'),
+      key: 'magnum_cluster',
+    },
   ],
 };
 
@@ -210,6 +240,10 @@ export class QuotaOverview extends Component {
     return globalRootStore.checkEndpoint('zun');
   }
 
+  get enableMagnum() {
+    return globalRootStore.checkEndpoint('magnum');
+  }
+
   get enableTrove() {
     return (
       globalRootStore.checkEndpoint('trove') && globalRootStore.hasAdminOnlyRole
@@ -236,6 +270,9 @@ export class QuotaOverview extends Component {
     }
     if (this.enableZun) {
       newList.push(zunQuotaCard);
+    }
+    if (this.enableMagnum) {
+      newList.push(magnumQuotaCard);
     }
     if (this.enableTrove) {
       newList.push(troveQuotaCard);

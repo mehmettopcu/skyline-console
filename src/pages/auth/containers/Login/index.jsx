@@ -36,14 +36,8 @@ export class Login extends Component {
   }
 
   componentDidMount() {
-    this.getDomains();
     this.getRegions();
     this.getSSO();
-  }
-
-  async getDomains() {
-    await this.store.fetchDomainList();
-    this.updateDefaultValue();
   }
 
   async getRegions() {
@@ -69,18 +63,13 @@ export class Login extends Component {
   }
 
   get productName() {
-    const {
-      product_name: { zh = t('Cloud Platform'), en = 'Cloud Platform' } = {},
-    } = this.info;
-    const { isLocaleZh } = i18n;
-    return t('Welcome, {name}', { name: isLocaleZh ? zh : en });
-  }
-
-  get domains() {
-    return (this.store.domains || []).map((it) => ({
-      label: it,
-      value: it,
-    }));
+    const { product_name = { zh: t('Cloud Platform'), en: 'Cloud Platform' } } =
+      this.info;
+    const { getLocaleShortName } = i18n;
+    const language = getLocaleShortName();
+    const name =
+      product_name[language] || t('Cloud Platform') || 'Cloud Platform';
+    return t('Welcome, {name}', { name });
   }
 
   get regions() {
@@ -88,6 +77,10 @@ export class Login extends Component {
       label: it,
       value: it,
     }));
+  }
+
+  get domains() {
+    return [];
   }
 
   get nextPage() {
@@ -163,9 +156,6 @@ export class Login extends Component {
     if (this.regions.length === 1) {
       data.region = this.regions[0].value;
     }
-    if (this.domains.length === 1) {
-      data.domain = this.domains[0].value;
-    }
     return data;
   }
 
@@ -198,16 +188,18 @@ export class Login extends Component {
     const domainItem = {
       name: 'domain',
       required: true,
-      message: t('Please select your Domain!'),
       render: () => (
-        <Select placeholder={t('Select a domain')} options={this.domains} />
+        <Input placeholder={t('<username> or <username>@<domain>')} />
       ),
+      extra: t('Tips: without domain means "Default" domain.'),
+      rules: [{ required: true, validator: this.usernameDomainValidator }],
     };
     const usernameItem = {
       name: 'username',
-      required: true,
+      required: false,
       message: t('Please input your Username!'),
       render: () => <Input placeholder={t('Username')} />,
+      hidden: true,
     };
     const passwordItem = {
       name: 'password',
@@ -325,8 +317,11 @@ export class Login extends Component {
       message: '',
       error: false,
     });
-    const { domain, password, region, username } = values;
-    const body = { domain, password, region, username };
+    const { password, region, domain } = values;
+    const usernameDomain = this.getUsernameAndDomain({
+      usernameDomain: domain,
+    });
+    const body = { password, region, ...usernameDomain };
     this.rootStore.login(body).then(
       () => {
         this.onLoginSuccess();
@@ -356,6 +351,37 @@ export class Login extends Component {
     }
     return t('Username or password is incorrect');
   }
+
+  getUsernameAndDomain = (values) => {
+    const { usernameDomain } = values;
+    const tmp = usernameDomain.trim().split('@');
+    return {
+      username: tmp[0],
+      domain: tmp[1] || 'Default',
+    };
+  };
+
+  usernameDomainValidator = (rule, value) => {
+    if (!value || !value.trim()) {
+      return Promise.reject(
+        t('Please input <username> or <username>@<domain name>!')
+      );
+    }
+    const tmp = value.trim().split('@');
+    const message = t(
+      'Please input the correct format:  <username> or <username>@<domain name>.'
+    );
+    if (tmp.length > 2) {
+      return Promise.reject(new Error(message));
+    }
+    const { username, domain } = this.getUsernameAndDomain({
+      usernameDomain: value,
+    });
+    if (!username || !domain) {
+      return Promise.reject(new Error(message));
+    }
+    return Promise.resolve();
+  };
 
   dealWithChangePassword = (detail, values) => {
     const userId = this.getUserId(detail);

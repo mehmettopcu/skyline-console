@@ -15,6 +15,10 @@
 import { inject, observer } from 'mobx-react';
 import globalListenerStore from 'stores/octavia/listener';
 import globalLbaasStore from 'stores/octavia/loadbalancer';
+import {
+  getInsertHeadersFormValueFromListener,
+  getInsertHeadersValueFromForm,
+} from 'resources/octavia/lb';
 import { Create as Base } from './CreateListener';
 
 export class Edit extends Base {
@@ -27,7 +31,8 @@ export class Edit extends Base {
   static policy = 'os_load-balancer_api:listener:put';
 
   static allowed = async (item, containerProps) => {
-    let { detail: lbDetail } = containerProps || {};
+    const { detail } = containerProps || {};
+    let lbDetail = item.loadBalancer || detail;
     if (!lbDetail) {
       lbDetail = await globalLbaasStore.pureFetchDetail(item.loadbalancers[0]);
     }
@@ -47,12 +52,22 @@ export class Edit extends Base {
 
   get defaultValue() {
     const { item } = this.props;
+    const {
+      name,
+      description,
+      protocol,
+      protocol_port,
+      connection_limit,
+      admin_state_up,
+    } = item || {};
     const values = {
-      name: item.name,
-      description: item.description,
-      protocol: item.protocol,
-      protocol_port: item.protocol_port,
-      connection_limit: item.connection_limit,
+      name,
+      description,
+      protocol,
+      protocol_port,
+      connection_limit,
+      insert_headers: getInsertHeadersFormValueFromListener(item),
+      admin_state_up,
     };
     if (item.protocol === 'TERMINATED_HTTPS') {
       if (item.default_tls_container_ref) {
@@ -91,6 +106,20 @@ export class Edit extends Base {
     return values;
   }
 
+  get formItems() {
+    const baseItems = super.formItems;
+    return baseItems.map((it) => {
+      if (it.name === 'sni_enabled') {
+        it.disabled =
+          this.item.sni_container_refs && this.item.sni_container_refs.length;
+        it.tip = t(
+          'If the listener has an SNI certificate installed, it cannot be removed. Please delete the listener or replace the SNI certificate'
+        );
+      }
+      return it;
+    });
+  }
+
   onSubmit = (values) => {
     const { id } = this.item;
     const {
@@ -101,11 +130,18 @@ export class Edit extends Base {
       default_tls_container_ref,
       client_ca_tls_container_ref,
       sni_container_refs,
+      insert_headers,
       ...rest
     } = values;
     const data = {
       ...rest,
     };
+    const insertHeaders = getInsertHeadersValueFromForm(insert_headers);
+    if (insertHeaders) {
+      data.insert_headers = insertHeaders;
+    } else {
+      data.insert_headers = {};
+    }
     if (protocol === 'TERMINATED_HTTPS') {
       if (default_tls_container_ref) {
         data.default_tls_container_ref =

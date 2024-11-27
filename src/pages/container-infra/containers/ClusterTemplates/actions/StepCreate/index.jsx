@@ -98,7 +98,7 @@ export class StepCreate extends StepAction {
       masterFlavor,
       additionalLabels,
       images,
-      keypairs,
+      keypair,
       externalNetwork,
       fixedNetwork,
       fixedSubnet,
@@ -107,35 +107,24 @@ export class StepCreate extends StepAction {
     const requestLabels = {};
     if (additionalLabels) {
       additionalLabels.forEach((item) => {
-        const labelKey = item.value.key.toLowerCase().trim();
-        const labelValue = item.value.value.toLowerCase().trim();
+        const labelKey = item.value.key;
+        const labelValue = item.value.value;
         requestLabels[labelKey] = labelValue;
       });
     }
 
     const body = {
+      ...rest,
       labels: requestLabels,
       external_network_id: externalNetwork.selectedRowKeys[0],
-      ...rest,
+      fixed_network: (fixedNetwork && fixedNetwork.selectedRowKeys[0]) || null,
+      fixed_subnet: (fixedSubnet && fixedSubnet.selectedRowKeys[0]) || null,
+      flavor_id: (flavor && flavor.selectedRowKeys[0]) || null,
+      master_flavor_id:
+        (masterFlavor && masterFlavor.selectedRowKeys[0]) || null,
+      image_id: (images && images.selectedRowKeys[0]) || null,
+      keypair_id: (keypair && keypair.selectedRowKeys[0]) || null,
     };
-    if (flavor) {
-      body.flavor_id = flavor.selectedRowKeys[0];
-    }
-    if (masterFlavor) {
-      body.master_flavor_id = masterFlavor.selectedRowKeys[0];
-    }
-    if (images) {
-      body.image_id = images.selectedRowKeys[0];
-    }
-    if (keypairs) {
-      body.keypair_id = keypairs.selectedRowKeys[0];
-    }
-    if (fixedNetwork) {
-      body.fixed_network = fixedNetwork.selectedRowKeys[0];
-    }
-    if (fixedSubnet) {
-      body.fixed_subnet = fixedSubnet.selectedRowKeys[0];
-    }
     if (this.isEdit) {
       return this.store.update({ id: this.params.id }, body);
     }

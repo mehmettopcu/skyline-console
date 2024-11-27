@@ -32,7 +32,7 @@ describe('The Server Group Page', () => {
   });
 
   it('successfully create', () => {
-    cy.clickHeaderButton(1)
+    cy.clickHeaderActionButton(0)
       .formInput('name', name)
       .formSelect('policy')
       .clickModalActionSubmitButton();
@@ -50,7 +50,7 @@ describe('The Server Group Page', () => {
     const password = 'passW0rd_1';
     cy.tableSearchText(name)
       .goToDetail()
-      .clickHeaderButton(1)
+      .clickHeaderActionButton(0)
       .formTableSelect('flavor')
       .formRadioChooseByLabel('image', imageType)
       .formTableSelectBySearch('image', imageName)
@@ -62,6 +62,7 @@ describe('The Server Group Page', () => {
       .clickStepActionNextButton()
       .formInput('name', instanceName)
       .formRadioChoose('loginType', 1)
+      .formInput('username', 'root')
       .formInput('password', password)
       .formInput('confirmPassword', password)
       .clickStepActionNextButton()

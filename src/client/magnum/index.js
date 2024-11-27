@@ -30,12 +30,33 @@ export class MagnumClient extends Base {
             key: 'actions/resize',
             method: 'post',
           },
+          {
+            name: 'upgrade',
+            key: 'actions/upgrade',
+            method: 'post',
+          },
         ],
       },
       {
         name: 'clusterTemplates',
         key: 'clustertemplates',
         responseKey: 'clustertemplate',
+      },
+      {
+        key: 'quotas',
+        subResources: [
+          {
+            name: 'cluster',
+            key: 'Cluster',
+          },
+        ],
+        extendOperations: [
+          {
+            name: 'updateQuota',
+            key: 'Cluster',
+            method: 'patch',
+          },
+        ],
       },
     ];
   }

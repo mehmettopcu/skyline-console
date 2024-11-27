@@ -24,6 +24,7 @@ import {
   SwitcherOutlined,
   ContainerOutlined,
   DatabaseFilled,
+  DeploymentUnitOutlined,
 } from '@ant-design/icons';
 
 const renderMenu = (t) => {
@@ -443,6 +444,82 @@ const renderMenu = (t) => {
               key: 'securityGroupDetailAdmin',
               level: 2,
               routePath: '/network/security-group-admin/detail/:id',
+            },
+          ],
+        },
+        {
+          path: '/network/rbac-policies-admin',
+          name: t('RBAC Policies'),
+          key: 'rbacPolicyAdmin',
+          level: 1,
+          children: [
+            {
+              path: /^\/network\/rbac-policies-admin\/detail\/.[^/]+$/,
+              name: t('RBAC Policy Detail'),
+              key: 'rbacPolicyDetailAdmin',
+              level: 2,
+              routePath: '/network/rbac-policies-admin/detail/:id',
+            },
+          ],
+        },
+        {
+          path: '/network/firewall-admin',
+          name: t('Firewalls'),
+          key: 'firewallAdmin',
+          level: 1,
+          endpoints: 'neutron_firewall',
+          children: [
+            {
+              path: /^\/network\/firewall-policy-admin\/detail\/[^/]+$/,
+              name: t('Policy Detail'),
+              key: 'firewallPolicyDetailAdmin',
+              level: 2,
+              routePath: '/network/firewall-policy-admin/detail/:id',
+            },
+            {
+              path: /^\/network\/firewall-admin\/[^/]+\/port\/[^/]+$/,
+              name: t('Firewall Port'),
+              key: 'firewallPortDetailAdmin',
+              level: 2,
+              routePath: '/network/firewall-admin/:firewallId/port/:portId',
+            },
+            {
+              path: /^\/network\/firewall-admin\/detail\/[^/]+$/,
+              name: t('Firewall Detail'),
+              key: 'firewallDetailAdmin',
+              level: 2,
+              routePath: '/network/firewall-admin/detail/:id',
+            },
+            {
+              path: /^\/network\/firewall-rule-admin\/detail\/[^/]+$/,
+              name: t('Rule Detail'),
+              key: 'firewallRuleDetailAdmin',
+              level: 2,
+              routePath: '/network/firewall-rule-admin/detail/:id',
+            },
+          ],
+        },
+        {
+          path: '/network/dns-admin/zones',
+          name: t('DNS Zones'),
+          key: 'dnsZonesAdmin',
+          endpoints: 'designate',
+          level: 1,
+          children: [
+            {
+              path: /^\/network\/dns-admin\/zones\/detail\/.[^/]+$/,
+              name: t('Zones Detail'),
+              key: 'dnsZonesDetailAdmin',
+              level: 2,
+              routePath: '/network/dns-admin/zones/detail/:id',
+            },
+            {
+              path: /^\/network\/dns-admin\/zones\/detail\/.[^/]+\/recordsets\/.[^/]+$/,
+              name: t('Recordsets Detail'),
+              key: 'dnsRecordSetDetailAdmin',
+              level: 2,
+              routePath:
+                '/network/dns-admin/zones/detail/:zoneId/recordsets/:id',
             },
           ],
         },
@@ -878,43 +955,135 @@ const renderMenu = (t) => {
       icon: <ContainerOutlined />,
       children: [
         {
-          path: '/container/containers-admin',
+          path: '/container-service/containers-admin',
           name: t('Containers'),
           key: 'zunContainersAdmin',
           endpoints: 'zun',
           level: 1,
           children: [
             {
-              path: /^\/container\/containers-admin\/detail\/.[^/]+$/,
+              path: /^\/container-service\/containers-admin\/detail\/.[^/]+$/,
               name: t('Container Detail'),
               key: 'zunContainerDetailAdmin',
               level: 2,
-              routePath: '/container/containers-admin/detail/:id',
+              routePath: '/container-service/containers-admin/detail/:id',
             },
           ],
         },
         {
-          path: '/container/hosts-admin',
+          path: '/container-service/hosts-admin',
           name: t('Hosts'),
           key: 'zunHostsAdmin',
           endpoints: 'zun',
           level: 1,
           children: [
             {
-              path: /^\/container\/hosts-admin\/detail\/.[^/]+$/,
+              path: /^\/container-service\/hosts-admin\/detail\/.[^/]+$/,
               name: t('Host Detail'),
               key: 'zuHostsDetailAdmin',
               level: 2,
-              routePath: '/container/hosts-admin/detail/:id',
+              routePath: '/container-service/hosts-admin/detail/:id',
             },
           ],
         },
         {
-          path: '/container/services-admin',
+          path: '/container-service/services-admin',
           name: t('Services'),
           key: 'zunServicesAdmin',
           endpoints: 'zun',
           level: 1,
+        },
+        {
+          path: '/container-infra/clusters-admin',
+          name: t('Clusters'),
+          key: 'containerInfraClustersAdmin',
+          endpoints: 'magnum',
+          level: 1,
+          children: [
+            {
+              path: /^\/container-infra\/clusters-admin\/detail\/.[^/]+$/,
+              name: t('Cluster Detail'),
+              key: 'containerInfraClusterDetailAdmin',
+              level: 2,
+              routePath: '/container-infra/clusters-admin/detail/:id',
+            },
+          ],
+        },
+        {
+          path: '/container-infra/cluster-template-admin',
+          name: t('Cluster Templates'),
+          key: 'clusterTemplateAdmin',
+          endpoints: 'magnum',
+          level: 1,
+          children: [
+            {
+              path: /^\/container-infra\/cluster-template-admin\/detail\/.[^/]+$/,
+              name: t('Cluster Template Detail'),
+              key: 'containerInfraClusterTemplateDetailAdmin',
+              level: 2,
+              routePath: '/container-infra/cluster-template-admin/detail/:id',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      path: '/ha',
+      name: t('Instance-HA'),
+      key: 'masakari',
+      icon: <DeploymentUnitOutlined />,
+      endpoints: 'masakari',
+      children: [
+        {
+          path: '/ha/segments-admin',
+          name: t('Segments'),
+          key: 'masakariSegmentsAdmin',
+          level: 1,
+          children: [
+            {
+              path: '/ha/segments-admin/create-step-admin',
+              name: t('Create Segment'),
+              key: 'masakariSegmentsCreateAdmin',
+              level: 2,
+            },
+            {
+              path: /^\/ha\/segments-admin\/detail\/.[^/]+$/,
+              name: t('Segment Detail'),
+              key: 'masakariSegmentDetailAdmin',
+              level: 2,
+              routePath: '/ha/segments-admin/detail/:id',
+            },
+          ],
+        },
+        {
+          path: '/ha/hosts-admin',
+          name: t('Hosts'),
+          key: 'masakariHostsAdmin',
+          level: 1,
+          children: [
+            {
+              path: /^\/ha\/hosts-admin\/detail\/.[^/]+$/,
+              name: t('Host Detail'),
+              key: 'masakariHostDetailAdmin',
+              level: 2,
+              routePath: '/ha/hosts-admin/detail/:id',
+            },
+          ],
+        },
+        {
+          path: '/ha/notifications-admin',
+          name: t('Notifications'),
+          key: 'masakariNotificationsAdmin',
+          level: 1,
+          children: [
+            {
+              path: /^\/ha\/notifications-admin\/detail\/.[^/]+$/,
+              name: t('Notification Detail'),
+              key: 'masakariNotificationDetailAdmin',
+              level: 2,
+              routePath: '/ha/notifications-admin/detail/:id',
+            },
+          ],
         },
       ],
     },

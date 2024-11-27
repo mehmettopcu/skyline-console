@@ -143,7 +143,7 @@ export class Resize extends ModalAction {
   get tips() {
     return (
       <div>
-        <p style={{ color: '#0068FF' }}>
+        <p style={{ color: globalCSS.primaryColor }}>
           {t('The current operation requires the instance to be shut down:')}
         </p>
         <p>
@@ -246,6 +246,14 @@ export class Resize extends ModalAction {
         type: 'check',
         content: t('Agree to force shutdown'),
         required: true,
+        validator: (rule, value) => {
+          if (value !== true) {
+            return Promise.reject(
+              new Error(t('Force shutdown must be checked!'))
+            );
+          }
+          return Promise.resolve();
+        },
       },
     ];
   }

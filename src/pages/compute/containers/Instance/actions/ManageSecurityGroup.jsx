@@ -136,6 +136,7 @@ export class ManageSecurityGroup extends ModalAction {
         isLoading: this.portStore.list.isLoading,
         isMulti: false,
         onChange: this.onPortChange,
+        disabledFunc: (record) => !record.port_security_enabled,
         filterParams: [
           {
             label: t('Owned Network'),
@@ -180,14 +181,13 @@ export class ManageSecurityGroup extends ModalAction {
         initValue: sgInitValue,
         required: true,
         tips: t(
-          'The security group is similar to the firewall function for setting up network access control, or you can go to the console and create a new security group. (Note: The security group you selected will work on all virtual LANS on the instances.)'
+          'The security group is similar to the firewall function for setting up network access control, or you can go to the console and create a new security group. (Note: The security group you selected will work on all virtual LANs on the instances.)'
         ),
         backendPageStore: this.securityGroupStore,
         extraParams: { project_id: this.currentProjectId },
         isMulti: true,
         filterParams: securityGroupFilter,
         columns: securityGroupColumns,
-        onRow: () => {},
       },
     ];
   }

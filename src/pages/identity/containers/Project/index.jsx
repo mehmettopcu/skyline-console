@@ -20,7 +20,7 @@ import globalProjectStore, { ProjectStore } from 'stores/keystone/project';
 import { yesNoOptions, emptyActionConfig } from 'utils/constants';
 import { SimpleTag } from 'resources/nova/instance';
 import { enabledColumn } from 'resources/keystone/domain';
-import actionConfigs from './actions';
+import actionConfigs, { actionConfigsInUserDetail } from './actions';
 import styles from './index.less';
 
 export class Projects extends Base {
@@ -54,6 +54,14 @@ export class Projects extends Base {
 
   get inDomainDetail() {
     return this.inDetailPage && this.path.includes('domain-admin/detail');
+  }
+
+  get forceRefreshTopDetailWhenListRefresh() {
+    return this.inUserDetail;
+  }
+
+  get refreshDetailDataWithSilence() {
+    return !this.inUserDetail;
   }
 
   getUserProjectRole = (record) => {
@@ -211,9 +219,12 @@ export class Projects extends Base {
         },
       },
       {
-        title: t('Affiliated Domain'),
+        title: t('Affiliated Domain ID/Name'),
         dataIndex: 'domainName',
         isHideable: true,
+        routeName: 'domainDetailAdmin',
+        isLink: true,
+        idKey: 'domain_id',
       },
       enabledColumn,
       {
@@ -262,22 +273,38 @@ export class Projects extends Base {
 
   get actionConfigs() {
     if (this.inDetailPage) {
+      if (this.inUserDetail) {
+        return actionConfigsInUserDetail;
+      }
       return emptyActionConfig;
     }
     return actionConfigs;
   }
 
   get searchFilters() {
+    const domainFilter = this.inDomainDetail
+      ? []
+      : [
+          {
+            label: t('Domain Name'),
+            name: 'domainName',
+          },
+        ];
     return [
       {
         label: t('Project Name'),
         name: 'name',
       },
       {
+        label: t('Project ID'),
+        name: 'id',
+      },
+      {
         label: t('Enabled'),
         name: 'enabled',
         options: yesNoOptions,
       },
+      ...domainFilter,
       {
         label: t('Tags'),
         name: 'tags',

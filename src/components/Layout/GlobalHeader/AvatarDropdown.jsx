@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { inject, observer } from 'mobx-react';
-import { Menu, Spin, Button } from 'antd';
+import { Menu, Spin, Button, Select } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import i18n from 'core/i18n';
 import ItemActionButtons from 'components/Tables/Base/ItemActionButtons';
@@ -24,7 +24,7 @@ import OpenRc from './OpenRc';
 import HeaderDropdown from '../HeaderDropdown';
 import styles from './index.less';
 
-const { getLocale, setLocale } = i18n;
+const { getLocale, setLocale, SUPPORT_LOCALES } = i18n;
 
 export class AvatarDropdown extends React.Component {
   get rootStore() {
@@ -58,6 +58,66 @@ export class AvatarDropdown extends React.Component {
     }
   };
 
+  onClickSelectLanguage = (e) => {
+    e && e.preventDefault();
+    e && e.stopPropagation();
+  };
+
+  renderLanguageSwitch() {
+    const selectedLang = getLocale();
+    const { length } = SUPPORT_LOCALES;
+    if (length > 3) {
+      const options = SUPPORT_LOCALES.map((it) => ({
+        label: it.icon.toLocaleUpperCase(),
+        value: it.value,
+      }));
+      return (
+        <div style={{ float: 'right' }}>
+          <Select
+            options={options}
+            value={selectedLang}
+            onChange={this.changeLang}
+            onClick={this.onClickSelectLanguage}
+          />
+        </div>
+      );
+    }
+    const btns = SUPPORT_LOCALES.map((item, index) => {
+      const { value, icon } = item;
+      return (
+        <>
+          <Button
+            className={index === 0 ? styles['no-padding-top'] : ''}
+            type="link"
+            disabled={selectedLang === value}
+            onClick={() => {
+              this.changeLang(value);
+            }}
+          >
+            {icon.toUpperCase()}
+          </Button>
+          {index !== length - 1 && <span>/</span>}
+        </>
+      );
+    });
+    return <span style={{ float: 'right' }}>{btns}</span>;
+  }
+
+  renderLanguageMenuItem() {
+    if (SUPPORT_LOCALES.length <= 1) {
+      return null;
+    }
+    return (
+      <Menu.Item
+        key="language"
+        className={`${styles['no-hover']} ${styles['menu-item']}`}
+      >
+        <span>{t('Switch Language')}</span>
+        {this.renderLanguageSwitch()}
+      </Menu.Item>
+    );
+  }
+
   render() {
     if (!this.user) {
       return (
@@ -71,7 +131,6 @@ export class AvatarDropdown extends React.Component {
       );
     }
     const { name: username } = this.user.user;
-    const selectedLang = getLocale();
     // const { selectedLang } = this.state.selectedLang;
     const menuHeaderDropdown = (
       <Menu className={styles.menu} onClick={this.onMenuClick}>
@@ -86,40 +145,20 @@ export class AvatarDropdown extends React.Component {
           <Button
             type="link"
             onClick={this.handleLogout}
-            className={`${styles.logout} ${styles['no-padding-top']}`}
+            className={`${styles['menu-btn']} ${styles.logout} ${styles['no-padding-top']}`}
           >
             {t('Sign Out')}
           </Button>
         </Menu.Item>
-        <Menu.Divider />
-        <Menu.Item
-          key="language"
-          className={`${styles['no-hover']} ${styles['menu-item']}`}
-        >
-          <span>{t('Switch Language')}</span>
-          <span style={{ float: 'right' }}>
-            <Button
-              className={styles['no-padding-top']}
-              type="link"
-              disabled={selectedLang === 'zh-cn'}
-              onClick={() => {
-                this.changeLang('zh-cn');
-              }}
-            >
-              CN
-            </Button>
-            <span>/</span>
-            <Button
-              type="link"
-              disabled={selectedLang === 'en'}
-              onClick={() => {
-                this.changeLang('en');
-              }}
-            >
-              EN
-            </Button>
-          </span>
+        <Menu.Divider className={styles['menu-divider']} />
+        {this.renderLanguageMenuItem()}
+        <Menu.Divider className={styles['menu-divider']} />
+        <Menu.Item key="userCenter" className={styles['menu-item']}>
+          <Button href="/user/center" type="link" style={{ textAlign: 'left' }}>
+            {t('User Center')}
+          </Button>
         </Menu.Item>
+        <Menu.Divider className={styles['menu-divider']} />
         <Menu.Item key="password" className={styles['menu-item']}>
           <ItemActionButtons
             actions={{ moreActions: [{ action: Password }] }}
@@ -150,7 +189,6 @@ export class AvatarDropdown extends React.Component {
             shape="circle"
             icon={<UserOutlined />}
             className={styles.avatar}
-            href="/user/center"
           />
         </div>
       </HeaderDropdown>

@@ -14,14 +14,19 @@
 
 import Base from 'containers/List';
 import { inject, observer } from 'mobx-react';
+import { getOptions } from 'utils';
 import { clusterStatus, healthStatus } from 'resources/magnum/cluster';
-import globalClustersStore from 'src/stores/magnum/clusters';
+import { ClustersStore } from 'stores/magnum/clusters';
+import { ClustersAdminStore } from 'stores/magnum/clusterAdmin';
 import actionConfigs from './actions';
 
 export class Clusters extends Base {
   init() {
-    this.store = globalClustersStore;
-    this.downloadStore = globalClustersStore;
+    if (this.isAdminPage) {
+      this.store = new ClustersAdminStore();
+    } else {
+      this.store = new ClustersStore();
+    }
   }
 
   get name() {
@@ -32,39 +37,76 @@ export class Clusters extends Base {
     return 'cluster:get_all';
   }
 
-  get actionConfigs() {
-    return actionConfigs;
+  get fetchDataByAllProjects() {
+    return false;
   }
 
-  getColumns = () => [
-    {
-      title: t('ID/Name'),
-      dataIndex: 'name',
-      routeName: this.getRouteName('containerInfraClusterDetail'),
-    },
-    {
-      title: t('Status'),
-      isHideable: true,
-      dataIndex: 'status',
-      valueMap: clusterStatus,
-    },
-    {
-      title: t('Health Status'),
-      isHideable: true,
-      dataIndex: 'health_status',
-      valueMap: healthStatus,
-    },
-    {
-      title: t('Keypair'),
-      isHideable: true,
-      dataIndex: 'keypair',
-      render: (value) => {
-        return value
-          ? this.getLinkRender('keypairDetail', value, { id: value })
-          : '-';
+  updateFetchParams = (params) => {
+    return {
+      ...params,
+      shouldFetchProject: this.isAdminPage,
+    };
+  };
+
+  get actionConfigs() {
+    if (this.isAdminPage) {
+      return actionConfigs.actionConfigsAdmin;
+    }
+    return actionConfigs.actionConfigs;
+  }
+
+  getColumns() {
+    return [
+      {
+        title: t('ID/Name'),
+        dataIndex: 'name',
+        routeName: this.getRouteName('containerInfraClusterDetail'),
       },
-    },
-  ];
+      {
+        title: t('Status'),
+        isHideable: true,
+        dataIndex: 'status',
+        valueMap: clusterStatus,
+      },
+      {
+        title: t('Health Status'),
+        isHideable: true,
+        dataIndex: 'health_status',
+        render: (value) => healthStatus[value] || value || '-',
+        isStatus: false,
+      },
+      {
+        title: t('Keypair'),
+        isHideable: true,
+        dataIndex: 'keypair',
+        hidden: this.isAdminPage,
+        render: (value) => {
+          return value
+            ? this.getLinkRender('keypairDetail', value, { id: value })
+            : '-';
+        },
+      },
+    ];
+  }
+
+  get searchFilters() {
+    return [
+      {
+        label: t('Name'),
+        name: 'name',
+      },
+      {
+        label: t('Status'),
+        name: 'status',
+        options: getOptions(clusterStatus),
+      },
+      {
+        label: t('Health Status'),
+        name: 'health_status',
+        options: getOptions(healthStatus),
+      },
+    ];
+  }
 }
 
 export default inject('rootStore')(observer(Clusters));

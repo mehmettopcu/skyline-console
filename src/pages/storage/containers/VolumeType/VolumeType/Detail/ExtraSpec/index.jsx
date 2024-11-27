@@ -32,7 +32,7 @@ export class ExtraSpecs extends Base {
 
   getColumns = () => [
     {
-      title: t('Key'),
+      title: t('Parameter'),
       dataIndex: 'keyname',
     },
     {
@@ -48,7 +48,7 @@ export class ExtraSpecs extends Base {
   get searchFilters() {
     return [
       {
-        label: t('Key'),
+        label: t('Parameter'),
         name: 'keyname',
       },
     ];

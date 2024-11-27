@@ -20,9 +20,12 @@ import { toJS } from 'mobx';
 import { isString, isEqual } from 'lodash';
 import classnames from 'classnames';
 import { getPath } from 'utils/route-map';
+import i18n from 'core/i18n';
 import styles from './index.less';
 
 const { SubMenu } = Menu;
+
+const { getLocaleShortName } = i18n;
 
 export class LayoutMenu extends Component {
   constructor(props) {
@@ -32,7 +35,8 @@ export class LayoutMenu extends Component {
       hover: false,
       openKeys: [],
     };
-    this.maxTitleLength = 17;
+    const shortName = getLocaleShortName();
+    this.maxTitleLength = shortName === 'zh' ? 9 : 17;
   }
 
   componentDidMount() {
@@ -123,12 +127,17 @@ export class LayoutMenu extends Component {
     }
   };
 
-  renderMenuItem = (item) => {
+  // eslint-disable-next-line no-unused-vars
+  renderMenuItemIcon = ({ item, collapsed, isSubMenu }) => {
+    return item.icon;
+  };
+
+  renderMenuItem = (item, isSubMenu) => {
     const { collapsed, hover } = this.state;
     if (collapsed && !hover) {
       return (
         <Menu.Item key={item.key} className={styles['menu-item-collapsed']}>
-          {item.icon}
+          {this.renderMenuItemIcon({ item, collapsed, isSubMenu })}
         </Menu.Item>
       );
     }
@@ -136,31 +145,45 @@ export class LayoutMenu extends Component {
     if (item.level > 1) {
       return null;
     }
-    if (!item.children || item.children.length === 0 || item.level) {
+    const { showChildren = true } = item;
+    if (
+      !showChildren ||
+      !item.children ||
+      item.children.length === 0 ||
+      item.level
+    ) {
       return (
         <Menu.Item
           key={item.key}
           className={styles['menu-item']}
           onClick={this.onClickMenuItem}
         >
-          {/* <Menu.Item key={item.key} className={styles['menu-item-no-child']}> */}
-          {item.icon}
-          <span className={styles['menu-item-title']}>
-            {item.name.length >= this.maxTitleLength ? (
-              <Tooltip title={item.name} placement="right">
-                {item.name}
-              </Tooltip>
-            ) : (
-              item.name
-            )}
+          <span className={styles['menu-item-title-wrapper']}>
+            {/* <Menu.Item key={item.key} className={styles['menu-item-no-child']}> */}
+            {this.renderMenuItemIcon({ item, isSubMenu })}
+            <span
+              className={
+                item.level === 0 || (item.level === 1 && !showChildren)
+                  ? styles['menu-item-title']
+                  : styles['sub-menu-item-title']
+              }
+            >
+              {item.name.length >= this.maxTitleLength ? (
+                <Tooltip title={item.name} placement="right">
+                  {item.name}
+                </Tooltip>
+              ) : (
+                item.name
+              )}
+            </span>
           </span>
         </Menu.Item>
       );
     }
     const title = (
-      <span>
-        {item.icon}
-        <span>
+      <span className={styles['sub-menu-title']}>
+        {this.renderMenuItemIcon({ item })}
+        <span className={styles['menu-item-title']}>
           {item.name.length >= this.maxTitleLength ? (
             <Tooltip title={item.name} placement="right">
               {item.name}
@@ -171,7 +194,9 @@ export class LayoutMenu extends Component {
         </span>
       </span>
     );
-    const subMenuItems = item.children.map((it) => this.renderMenuItem(it));
+    const subMenuItems = item.children.map((it) =>
+      this.renderMenuItem(it, true)
+    );
 
     return (
       <SubMenu key={item.key} title={title} className={styles['sub-menu']}>
@@ -224,7 +249,7 @@ export class LayoutMenu extends Component {
     const newSelectedKeys = this.getSelectedKeysForMenu(selectedKeys);
     return (
       <Menu
-        theme="dark"
+        theme={GLOBAL_VARIABLES.menuTheme}
         mode="inline"
         className={collapsed ? styles['menu-collapsed'] : styles.menu}
         defaultSelectedKeys={newSelectedKeys}

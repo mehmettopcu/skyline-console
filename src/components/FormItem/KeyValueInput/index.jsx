@@ -26,6 +26,9 @@ export default class index extends Component {
     valueReadonly: PropTypes.bool,
     keySpan: PropTypes.number,
     valueSpan: PropTypes.number,
+    middleComponent: PropTypes.node,
+    isTextarea: PropTypes.bool,
+    textareaRows: PropTypes.number,
   };
 
   static defaultProps = {
@@ -36,6 +39,9 @@ export default class index extends Component {
     },
     keyReadonly: false,
     valueReadonly: false,
+    middleComponent: <PauseOutlined rotate={90} />,
+    isTextarea: false,
+    textareaRows: 2,
   };
 
   constructor(props) {
@@ -78,6 +84,22 @@ export default class index extends Component {
     });
   };
 
+  renderInput(value, placeholder, readOnly) {
+    const { isTextarea = false, textareaRows } = this.props;
+    const props = {
+      value,
+      placeholder,
+      onChange: this.onValueChange,
+      readOnly,
+      required: true,
+    };
+    if (isTextarea) {
+      props.rows = textareaRows;
+      return <Input.TextArea {...props} />;
+    }
+    return <Input {...props} />;
+  }
+
   render() {
     const { key, value } = this.state;
     const {
@@ -87,7 +109,10 @@ export default class index extends Component {
       valueSpan,
       keyPlaceholder = t('Please input key'),
       valuePlaceholder = t('Please input value'),
+      middleComponent,
     } = this.props;
+    const style = { textAlign: 'center', lineHeight: '30px', margin: '0 10px' };
+    const component = <div style={style}>{middleComponent}</div>;
     return (
       <Row>
         <Col span={keySpan || 4}>
@@ -99,17 +124,9 @@ export default class index extends Component {
             required
           />
         </Col>
-        <Col span={1} style={{ textAlign: 'center', lineHeight: '30px' }}>
-          <PauseOutlined rotate={90} />
-        </Col>
+        {component}
         <Col span={valueSpan || 8}>
-          <Input
-            value={value}
-            placeholder={valuePlaceholder}
-            onChange={this.onValueChange}
-            readOnly={valueReadonly}
-            required
-          />
+          {this.renderInput(value, valuePlaceholder, valueReadonly)}
         </Col>
       </Row>
     );

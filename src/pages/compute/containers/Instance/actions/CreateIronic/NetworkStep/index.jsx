@@ -182,6 +182,7 @@ export class NetworkStep extends Base {
             {getLinkRender({
               key: 'network',
               value: `${t('create a new network/subnet')} > `,
+              extra: { target: '_blank' },
             })}
           </div>
         ),
@@ -215,7 +216,7 @@ export class NetworkStep extends Base {
         hidden: true,
         content: (
           <span>
-            {t('The selected VPC/ subnet does not have IPv6 enabled.')}{' '}
+            {t('The selected VPC/subnet does not have IPv6 enabled.')}{' '}
             <Button type="link">
               {t('To open')} <FormOutlined />
             </Button>{' '}
@@ -254,7 +255,6 @@ export class NetworkStep extends Base {
         ),
         filterParams: securityGroupFilter,
         columns: securityGroupColumns,
-        onRow: () => {},
       },
     ];
   }

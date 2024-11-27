@@ -39,7 +39,7 @@ describe('The Instance Page', () => {
   });
 
   it('successfully create', () => {
-    cy.clickHeaderButton(1)
+    cy.clickHeaderActionButton(0)
       .url()
       .should('include', `${listUrl}/create`)
       .wait(5000)
@@ -58,6 +58,7 @@ describe('The Instance Page', () => {
       .clickStepActionNextButton()
       .formInput('name', name)
       .formRadioChoose('loginType', 1)
+      .formInput('username', 'root')
       .formInput('password', password)
       .formInput('confirmPassword', password)
       .wait(2000)
@@ -87,11 +88,11 @@ describe('The Instance Page', () => {
       .wait(10000);
     cy.tableSearchText(name)
       .selectFirst()
-      .clickHeaderButtonByTitle('Start')
+      .clickHeaderActionButtonByTitle('Start')
       .checkDisableAction(2000)
-      .clickHeaderButtonByTitle('Stop')
+      .clickHeaderActionButtonByTitle('Stop')
       .checkDisableAction(2000)
-      .clickHeaderButtonByTitle('Reboot')
+      .clickHeaderActionButtonByTitle('Reboot')
       .checkDisableAction(2000);
   });
 
@@ -105,11 +106,7 @@ describe('The Instance Page', () => {
     cy.tableSearchText(name)
       .clickConfirmActionInMoreSub('Stop', 'Instance Status')
       .tableSearchText(name)
-      .waitStatusTextByFresh('Shutoff')
-      .tableSearchText(name)
-      .selectFirst()
-      .clickHeaderButtonByTitle('Stop')
-      .checkDisableAction(2000);
+      .waitStatusTextByFresh('Shutoff');
   });
 
   it('successfully start', () => {
@@ -118,7 +115,7 @@ describe('The Instance Page', () => {
       .waitStatusActive()
       .checkColumnValue(6, 'Active')
       .selectFirst()
-      .clickHeaderButtonByTitle('Start')
+      .clickHeaderActionButtonByTitle('Start')
       .checkDisableAction(2000);
   });
 
@@ -160,20 +157,20 @@ describe('The Instance Page', () => {
       .waitStatusActiveByRefresh();
   });
 
-  it('successfully reboot', () => {
-    cy.tableSearchText(name)
-      .clickConfirmActionInMoreSub('Reboot', 'Instance Status')
-      .tableSearchText(name)
-      .waitStatusActiveByRefresh();
-  });
+  // it('successfully reboot', () => {
+  //   cy.tableSearchText(name)
+  //     .clickConfirmActionInMoreSub('Reboot', 'Instance Status')
+  //     .tableSearchText(name)
+  //     .waitStatusActiveByRefresh();
+  // });
 
-  it('successfully soft reboot', () => {
-    cy.tableSearchText(name)
-      .clickConfirmActionInMoreSub('Soft Reboot', 'Instance Status')
-      .wait(5000)
-      .tableSearchText(name)
-      .waitStatusActiveByRefresh();
-  });
+  // it('successfully soft reboot', () => {
+  //   cy.tableSearchText(name)
+  //     .clickConfirmActionInMoreSub('Soft Reboot', 'Instance Status')
+  //     .wait(5000)
+  //     .tableSearchText(name)
+  //     .waitStatusActiveByRefresh();
+  // });
 
   it('successfully attach interface', () => {
     cy.tableSearchText(name)

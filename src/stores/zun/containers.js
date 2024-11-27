@@ -15,11 +15,32 @@
 import Base from 'stores/base';
 import client from 'client';
 import { action } from 'mobx';
-import { isEmpty } from 'lodash';
 
 export class ContainersStore extends Base {
   get client() {
     return client.zun.containers;
+  }
+
+  get imageClient() {
+    return client.glance.images;
+  }
+
+  get networkClient() {
+    return client.neutron.networks;
+  }
+
+  get subnetClient() {
+    return client.neutron.subnets;
+  }
+
+  get mapper() {
+    return (data) => {
+      return {
+        ...data,
+        id: data.uuid,
+        task_state: data.task_state === null ? 'free' : data.task_state,
+      };
+    };
   }
 
   @action
@@ -77,23 +98,70 @@ export class ContainersStore extends Base {
     return this.client.execute(id, data);
   }
 
+  @action
+  async attach(id) {
+    return this.client.attach(id);
+  }
+
+  @action
+  async attachNetwork(id, data) {
+    return this.client.network_attach(id, null, data);
+  }
+
+  @action
+  async detachNetwork(id, data) {
+    return this.client.network_detach(id, null, data);
+  }
+
+  async listDidFetch(items) {
+    if (!items.length) return items;
+    const [{ networks: allNetworks }, { subnets: allSubnets }] =
+      await Promise.all([this.networkClient.list(), this.subnetClient.list()]);
+    return items.map((it) => {
+      const { addresses = {} } = it;
+      const networks = [];
+      const addrs = [];
+      const subnets = [];
+      Object.entries(addresses).forEach(([key, val]) => {
+        (val || []).forEach((v) => {
+          const network = allNetworks.find((net) => net.id === key);
+          const subnet = allSubnets.find((sub) => sub.id === v.subnet_id);
+          addrs.push({ network, addr: v.addr, port: v.port });
+          networks.push(network);
+          subnets.push(subnet);
+        });
+      });
+      return { ...it, addrs, networks, subnets };
+    });
+  }
+
   async detailDidFetch(item) {
-    const { uuid, status, addresses = {} } = item;
+    const { uuid, status, image_driver, image, addresses = {} } = item;
     let stats = {};
     if (status === 'Running') {
       stats = (await this.client.stats.list(uuid)) || {};
     }
-    const networks = Object.keys(addresses);
-    let { ports = [] } = item;
-    if (isEmpty(ports)) {
-      ports = Object.values(addresses)
-        .reduce((ret, cur) => {
-          ret = ret.concat(cur);
-          return ret;
-        }, [])
-        .map((it) => it.port);
+    if (image_driver === 'glance') {
+      try {
+        const info = await this.imageClient.show(image);
+        item.imageInfo = info;
+      } catch (error) {}
     }
-    return { ...item, stats, networks, ports };
+    const [{ networks: allNetworks }, { subnets: allSubnets }] =
+      await Promise.all([this.networkClient.list(), this.subnetClient.list()]);
+    const networks = [];
+    const addrs = [];
+    const subnets = [];
+    Object.entries(addresses).forEach(([key, val]) => {
+      (val || []).forEach((v) => {
+        const network = allNetworks.find((net) => net.id === key);
+        const subnet = allSubnets.find((sub) => sub.id === v.subnet_id);
+        addrs.push({ network, addr: v.addr, port: v.port });
+        networks.push(network);
+        subnets.push(subnet);
+      });
+    });
+    return { ...item, stats, networks, addrs, subnets };
   }
 
   async fetchLogs(id) {

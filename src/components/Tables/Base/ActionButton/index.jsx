@@ -15,7 +15,7 @@
 import React, { Component } from 'react';
 import { inject, observer } from 'mobx-react';
 import { Modal, Button, Tooltip } from 'antd';
-import { isArray, isFunction, isBoolean } from 'lodash';
+import { isArray, isFunction, isBoolean, isEmpty } from 'lodash';
 import Confirm from 'components/Confirm';
 import PropTypes from 'prop-types';
 import Notify from 'components/Notify';
@@ -23,7 +23,7 @@ import classnames from 'classnames';
 import { firstUpperCase, allSettled } from 'utils';
 import styles from './index.less';
 
-function getDefaultMsg(action, data) {
+export const getDefaultMsg = (action, data) => {
   const { actionName = '', title = '' } = action;
   const name = isArray(data) ? data.map((it) => it.name).join(', ') : data.name;
   const submitErrorMsg = t('Unable to {action} {name}.', {
@@ -50,7 +50,7 @@ function getDefaultMsg(action, data) {
     confirmContext,
     performErrorMsg,
   };
-}
+};
 
 export class ActionButton extends Component {
   static propTypes() {
@@ -253,21 +253,40 @@ export class ActionButton extends Component {
     this.onCallback(false, true);
   };
 
-  onShowConfirm = async () => {
-    const {
-      perform,
-      title,
-      confirmContext,
-      okText,
-      cancelText,
-      onSubmit,
-      afterSubmit,
-    } = this.props.action;
-    const { item, items, isBatch, containerProps, onCancelAction } = this.props;
-    const data = isBatch ? items : item;
-    const content = confirmContext
+  getConfirmOkButtonProps = (data, action) => {
+    const { disableSubmit = false, okButtonProps } = action;
+    if (okButtonProps) {
+      return okButtonProps;
+    }
+    return {
+      disabled: disableSubmit,
+    };
+  };
+
+  getConfirmCancelButtonProps = (data, action) => {
+    const { cancelButtonProps } = action;
+    if (cancelButtonProps) {
+      return cancelButtonProps;
+    }
+    return {};
+  };
+
+  getConfirmContent = (data, action) => {
+    const { confirmContext } = action;
+    return confirmContext
       ? confirmContext(data)
-      : getDefaultMsg(this.props.action, data).confirmContext;
+      : getDefaultMsg(action, data).confirmContext;
+  };
+
+  onShowConfirm = async () => {
+    const { item, items, isBatch, containerProps, onCancelAction, action } =
+      this.props;
+    const { perform, title, okText, cancelText, onSubmit, afterSubmit } =
+      action;
+    const data = isBatch ? items : item;
+    const content = this.getConfirmContent(data, action);
+    const okButtonProps = this.getConfirmOkButtonProps(data, action);
+    const cancelButtonProps = this.getConfirmCancelButtonProps(data, action);
     try {
       perform(data).then(
         () => {
@@ -276,6 +295,8 @@ export class ActionButton extends Component {
             content,
             okText,
             cancelText,
+            okButtonProps,
+            cancelButtonProps,
             onOk: () => {
               return this.onConfirmOK(
                 data,
@@ -292,8 +313,7 @@ export class ActionButton extends Component {
           });
         },
         (error) => {
-          const message =
-            error || getDefaultMsg(this.props.action, data).performErrorMsg;
+          const message = error || getDefaultMsg(action, data).performErrorMsg;
           Confirm.error({
             content: message,
           });
@@ -302,8 +322,7 @@ export class ActionButton extends Component {
     } catch (error) {
       // eslint-disable-next-line no-console
       console.log(error);
-      const message =
-        error || getDefaultMsg(this.props.action, data).performErrorMsg;
+      const message = error || getDefaultMsg(action, data).performErrorMsg;
       Confirm.error({
         content: message,
       });
@@ -444,6 +463,33 @@ export class ActionButton extends Component {
     }
   };
 
+  getModalOkButtonProps = ({ item, action, items }) => {
+    const { disableSubmit = false, okButtonProps } = action;
+    if (okButtonProps) {
+      return okButtonProps;
+    }
+    const disabled = isFunction(disableSubmit)
+      ? disableSubmit({ item, items, action })
+      : disableSubmit;
+    return {
+      disabled,
+    };
+  };
+
+  // eslint-disable-next-line no-unused-vars
+  getModalCancelButtonProps = ({ item, action, items }) => {
+    const { readOnly, cancelButtonProps } = action;
+    if (cancelButtonProps) {
+      return cancelButtonProps;
+    }
+    if (readOnly) {
+      return {
+        style: { display: 'none' },
+      };
+    }
+    return {};
+  };
+
   showModalAction() {
     this.setState({
       visible: true,
@@ -455,17 +501,24 @@ export class ActionButton extends Component {
     if (!visible) {
       return null;
     }
-    const { title, action, item, containerProps, items } = this.props;
-    const ActionComponent = action;
     const {
-      okText,
-      cancelText,
-      id,
-      className,
-      readOnly,
-      disableSubmit = false,
-    } = action;
+      title,
+      action,
+      item,
+      containerProps,
+      items,
+      onFinishAction,
+      onCancelAction,
+    } = this.props;
+    const ActionComponent = action;
+    const { okText, cancelText, id, className } = action;
     const width = this.getModalWidth(action);
+    const okButtonProps = this.getModalOkButtonProps({ item, action, items });
+    const cancelButtonProps = this.getModalCancelButtonProps({
+      item,
+      action,
+      items,
+    });
     const modalProps = {
       title,
       visible,
@@ -473,18 +526,14 @@ export class ActionButton extends Component {
       width,
       onOk: () => this.onClickModalActionOk(),
       onCancel: this.onClickModalActionCancel,
-      okButtonProps: {
-        disabled: disableSubmit,
-      },
+      okButtonProps,
       confirmLoading: submitLoading,
       okText,
       cancelText,
       maskClosable: false,
     };
-    if (readOnly) {
-      modalProps.cancelButtonProps = {
-        style: { display: 'none' },
-      };
+    if (!isEmpty(cancelButtonProps)) {
+      modalProps.cancelButtonProps = cancelButtonProps;
     }
     return (
       <Modal {...modalProps}>
@@ -493,6 +542,10 @@ export class ActionButton extends Component {
           items={items}
           ref={this.formRef}
           containerProps={containerProps}
+          onFinishAction={onFinishAction}
+          onCancelAction={onCancelAction}
+          modalProps={modalProps}
+          action={action}
         />
       </Modal>
     );

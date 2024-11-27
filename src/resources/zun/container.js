@@ -26,7 +26,7 @@ export const containerStatus = {
 };
 
 export const containerTaskStatus = {
-  null: t('No Task'),
+  free: t('No Task'),
   container_creating: t('Container Creating'),
   container_starting: t('Container Starting'),
   container_stopping: t('Container Stopping'),
@@ -34,6 +34,14 @@ export const containerTaskStatus = {
   container_deleting: t('Container Deleting'),
   container_rebuilding: t('Container Rebuilding'),
   container_killing: t('Container Killing'),
+  container_pausing: t('Container Pausing'),
+  container_unpausing: t('Container Unpausing'),
+  container_restarting: t('Container Restarting'),
+  image_pulling: t('Image Pulling'),
+  sg_adding: t('Security Groups Adding'),
+  sg_removing: t('Security Groups Removing'),
+  network_attaching: t('Network Attaching'),
+  network_detaching: t('Network Detaching'),
 };
 
 const states = {
@@ -95,10 +103,28 @@ const validStates = {
     states.STOPPED,
     states.PAUSED,
   ],
+  network_attach_detach: [
+    states.CREATED,
+    states.RUNNING,
+    states.STOPPED,
+    states.PAUSED,
+  ],
 };
 
 export const checkItemAction = (item, actionName) => {
   if (!item) return false;
   const { status } = item;
   return validStates[actionName].includes(status);
+};
+
+export const imageDrivers = {
+  docker: t('Docker Hub'),
+  glance: t('Glance Image'),
+};
+
+export const exitPolicies = {
+  no: t('No'),
+  'on-failure': t('On failure'),
+  always: t('Always'),
+  'unless-stopped': t('Unless Stopped'),
 };

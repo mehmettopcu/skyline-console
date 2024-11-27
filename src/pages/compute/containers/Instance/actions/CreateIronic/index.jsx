@@ -207,27 +207,37 @@ export class CreateIronic extends StepAction {
     return null;
   }
 
-  renderFooterLeft() {
-    const { data } = this.state;
-    const { count = 1 } = data;
-    const configs = {
+  getCountInputConfig() {
+    return {
       min: 1,
       max: 100,
       precision: 0,
       onChange: this.onCountChange,
       formatter: (value) => `$ ${value}`.replace(/\D/g, ''),
     };
+  }
+
+  renderCountInput() {
+    const { data } = this.state;
+    const { count = 1 } = data || {};
+    const configs = this.getCountInputConfig();
+    return (
+      <div className={styles['number-input']}>
+        <span>{t('Count')}</span>
+        <InputNumber
+          {...configs}
+          value={count}
+          className={classnames(styles.input, 'instance-count')}
+        />
+      </div>
+    );
+  }
+
+  renderFooterLeft() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className={styles['number-input']}>
-            <span>{t('Count')}</span>
-            <InputNumber
-              {...configs}
-              value={count}
-              className={classnames(styles.input, 'instance-count')}
-            />
-          </div>
+          {this.renderCountInput()}
           {this.renderExtra()}
         </div>
         {this.renderBadge()}
@@ -317,7 +327,10 @@ export class CreateIronic extends StepAction {
       server.return_reservation_id = true;
     }
     if (server.adminPass || userData) {
-      server.user_data = btoa(getUserData(server.adminPass, userData));
+      const { username } = values;
+      server.user_data = btoa(
+        getUserData(server.adminPass, userData, username || 'root')
+      );
     }
     return {
       server,

@@ -80,19 +80,12 @@ export default class BaseList extends React.Component {
   }
 
   componentDidMount() {
-    this.unsubscribe = this.routing.history.subscribe((location) => {
-      if (
-        location.pathname === this.props.match.url &&
-        location.key === this.props.location.key
-      ) {
-        const params = this.initFilter;
-        if (!this.filterTimeKey) {
-          const { limit, page } = this.store.list;
-          this.list.filters = {};
-          this.handleFetch({ ...params, limit, page }, true);
-        }
-      }
-    });
+    const params = this.initFilter;
+    if (!this.filterTimeKey) {
+      const { limit, page } = this.store.list;
+      this.list.filters = {};
+      this.handleFetch({ ...params, limit, page }, true);
+    }
     window.addEventListener('resize', this.debounceSetTableHeight);
   }
 
@@ -150,6 +143,11 @@ export default class BaseList extends React.Component {
   get inDetailPage() {
     const { detail } = this.props;
     return !!detail;
+  }
+
+  get inDetailAction() {
+    const { inAction } = this.props;
+    return !!inAction;
   }
 
   get detailName() {
@@ -279,12 +277,18 @@ export default class BaseList extends React.Component {
 
   get tableTopHeight() {
     const tableSearchHeader = document.getElementById('sl-table-header-search');
+    const tableSearchInputItemMenu =
+      document.getElementById('search-items-menu');
     const tableSearchHeight = tableSearchHeader
       ? tableSearchHeader.scrollHeight
       : defaultTableSearchHeight;
-    const topTotal = navHeight + breadcrumbHeight + tableSearchHeight + padding;
+    const searchMenuHeight = tableSearchInputItemMenu?.scrollHeight || 0;
+    const searchHeight = searchMenuHeight
+      ? tableSearchHeight - searchMenuHeight + 10
+      : tableSearchHeight;
+    const topTotal = navHeight + breadcrumbHeight + searchHeight + padding;
     if (this.hasSubTab) {
-      return topTotal + tabHeight * 2;
+      return topTotal + tabHeight * 2 + 20;
     }
     if (this.hasTab) {
       return topTotal + tabHeight;
@@ -440,6 +444,14 @@ export default class BaseList extends React.Component {
     return false;
   }
 
+  get middleComponentInTableHeader() {
+    return null;
+  }
+
+  get refreshDetailDataWithSilence() {
+    return true;
+  }
+
   setRefreshDataTimerTransition = () => {
     this.stopRefreshAuto();
     if (this.dataTimerTransition) {
@@ -557,6 +569,7 @@ export default class BaseList extends React.Component {
       primaryActionsExtra: this.primaryActionsExtra,
       isAdminPage: this.isAdminPage,
       initFilter: this.initFilter,
+      middleComponentInHeader: this.middleComponentInTableHeader,
       ...this.getEnabledTableProps(),
     };
   }
@@ -926,11 +939,14 @@ export default class BaseList extends React.Component {
 
   refreshDetailData = () => {
     const { refreshDetail } = this.props;
-    refreshDetail && refreshDetail();
+    refreshDetail && refreshDetail(this.refreshDetailDataWithSilence);
   };
 
   handleRefresh = (force) => {
     const { inAction, inSelect } = this;
+    if (this.inDetailPage && this.inDetailAction) {
+      return;
+    }
     if (inAction || (inSelect && !force)) {
       return;
     }
@@ -1044,6 +1060,7 @@ export default class BaseList extends React.Component {
       // this.list.timeFilter = timeFilter;
       this.setState(
         {
+          filters: rest,
           timeFilter,
         },
         () => {

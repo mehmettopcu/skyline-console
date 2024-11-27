@@ -67,10 +67,19 @@ export class ListenerDetail extends Base {
         dataIndex: 'connection_limit',
       },
       {
+        title: t('Admin State Up'),
+        dataIndex: 'admin_state_up',
+        render: (value) => (value ? t('On') : t('Off')),
+      },
+      {
         title: t('Description'),
         dataIndex: 'description',
       },
     ];
+  }
+
+  get forceLoadingTabs() {
+    return ['detail'];
   }
 
   get tabs() {

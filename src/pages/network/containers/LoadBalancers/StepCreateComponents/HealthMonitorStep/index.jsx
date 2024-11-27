@@ -41,6 +41,7 @@ export class HealthMonitorStep extends Base {
       health_timeout: 3,
       health_max_retries: 3,
       health_type: '',
+      monitor_admin_state_up: true,
     };
   }
 
@@ -51,7 +52,7 @@ export class HealthMonitorStep extends Base {
     return [
       {
         name: 'enableHealthMonitor',
-        label: t('Enable HealthMonitor'),
+        label: t('Enable Health Monitor'),
         type: 'radio',
         options: [
           {
@@ -114,6 +115,13 @@ export class HealthMonitorStep extends Base {
         type: 'select',
         options: this.filteredProtocolOptions,
         required: true,
+        hidden: !enableHealthMonitor,
+      },
+      {
+        name: 'monitor_admin_state_up',
+        label: t('Admin State Up'),
+        type: 'switch',
+        tip: t('Defines the admin state of the health monitor.'),
         hidden: !enableHealthMonitor,
       },
     ];

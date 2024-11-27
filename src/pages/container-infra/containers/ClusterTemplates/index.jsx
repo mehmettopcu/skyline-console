@@ -12,14 +12,18 @@
 
 import Base from 'containers/List';
 import { inject, observer } from 'mobx-react';
-import globalClusterTemplateStore from 'src/stores/magnum/clusterTemplates';
+import { ClusterTemplatesStore } from 'stores/magnum/clusterTemplates';
+import { ClusterTemplatesAdminStore } from 'stores/magnum/clusterTemplatesAdmin';
 import { getBaseTemplateColumns } from 'resources/magnum/template';
 import actionConfigs from './actions';
 
 export class ClusterTemplates extends Base {
   init() {
-    this.store = globalClusterTemplateStore;
-    this.downloadStore = globalClusterTemplateStore;
+    if (this.isAdminPage) {
+      this.store = new ClusterTemplatesAdminStore();
+    } else {
+      this.store = new ClusterTemplatesStore();
+    }
   }
 
   get name() {
@@ -30,11 +34,36 @@ export class ClusterTemplates extends Base {
     return 'clustertemplate:get_all';
   }
 
-  get actionConfigs() {
-    return actionConfigs;
+  get fetchDataByAllProjects() {
+    return false;
   }
 
-  getColumns = () => getBaseTemplateColumns(this);
+  updateFetchParams = (params) => {
+    return {
+      ...params,
+      shouldFetchProject: this.isAdminPage,
+    };
+  };
+
+  get actionConfigs() {
+    if (this.isAdminPage) {
+      return actionConfigs.actionConfigsAdmin;
+    }
+    return actionConfigs.actionConfigs;
+  }
+
+  getColumns() {
+    return getBaseTemplateColumns(this);
+  }
+
+  get searchFilters() {
+    return [
+      {
+        label: t('Name'),
+        name: 'name',
+      },
+    ];
+  }
 }
 
 export default inject('rootStore')(observer(ClusterTemplates));

@@ -16,6 +16,7 @@ import Base from 'containers/List';
 import { inject, observer } from 'mobx-react';
 import globalCapsulesStore from 'stores/zun/capsules';
 import { capsuleStatus } from 'resources/zun/capsule';
+import { getOptions } from 'utils';
 import actionConfigs from './actions';
 
 export class Capsules extends Base {
@@ -36,31 +37,47 @@ export class Capsules extends Base {
     return actionConfigs;
   }
 
-  getColumns = () => [
-    {
-      title: t('ID/Name'),
-      dataIndex: 'meta_name',
-      isLink: true,
-      routeName: this.getRouteName('zunCapsuleDetail'),
-      idKey: 'uuid',
-    },
-    {
-      title: t('Status'),
-      isHideable: true,
-      dataIndex: 'status',
-      valueMap: capsuleStatus,
-    },
-    {
-      title: t('CPU'),
-      isHideable: true,
-      dataIndex: 'cpu',
-    },
-    {
-      title: t('Memory'),
-      isHideable: true,
-      dataIndex: 'memory',
-    },
-  ];
+  getColumns() {
+    return [
+      {
+        title: t('ID/Name'),
+        dataIndex: 'meta_name',
+        isLink: true,
+        routeName: this.getRouteName('zunCapsuleDetail'),
+        idKey: 'uuid',
+      },
+      {
+        title: t('Status'),
+        isHideable: true,
+        dataIndex: 'status',
+        valueMap: capsuleStatus,
+      },
+      {
+        title: t('CPU'),
+        isHideable: true,
+        dataIndex: 'cpu',
+      },
+      {
+        title: t('Memory'),
+        isHideable: true,
+        dataIndex: 'memory',
+      },
+    ];
+  }
+
+  get searchFilters() {
+    return [
+      {
+        label: t('Name'),
+        name: 'name',
+      },
+      {
+        label: t('Status'),
+        name: 'status',
+        options: getOptions(capsuleStatus),
+      },
+    ];
+  }
 }
 
 export default inject('rootStore')(observer(Capsules));

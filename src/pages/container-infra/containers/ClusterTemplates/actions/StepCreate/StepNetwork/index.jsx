@@ -18,7 +18,7 @@ import { inject, observer } from 'mobx-react';
 import { NetworkStore } from 'src/stores/neutron/network';
 import { SubnetStore } from 'src/stores/neutron/subnet';
 import { getLinkRender } from 'utils/route-map';
-import { networkColumns } from 'resources/neutron/network';
+import { networkColumns, subnetColumns } from 'resources/neutron/network';
 
 export class StepNetwork extends Base {
   async init() {
@@ -50,7 +50,8 @@ export class StepNetwork extends Base {
   }
 
   get subnetList() {
-    const { fixedNetwork: { selectedRowKeys = [] } = {} } = this.state;
+    const selectedRowKeys =
+      this.props.context?.fixedNetwork?.selectedRowKeys || [];
     return (this.subnetNetworkStore.list.data || []).filter(
       (it) => selectedRowKeys[0] === it.network_id
     );
@@ -75,10 +76,6 @@ export class StepNetwork extends Base {
     return acceptedDrivers;
   }
 
-  get nameForStateUpdate() {
-    return ['fixedNetwork'];
-  }
-
   get defaultValue() {
     let values = {};
 
@@ -90,42 +87,46 @@ export class StepNetwork extends Base {
           https_proxy,
           no_proxy,
           external_network_id,
+          externalNetwork,
           fixed_network,
+          fixedNetwork,
           fixed_subnet,
+          fixedSubnet,
           dns_nameserver,
           master_lb_enabled,
           floating_ip_enabled,
         } = {},
+        context: {
+          fixedNetwork: fixedNetworkContext,
+          fixedSubnet: fixedSubnetContext,
+        },
       } = this.props;
       values = {
         network_driver,
         http_proxy,
         https_proxy,
         no_proxy,
-        externalNetwork: {
-          selectedRowKeys: [external_network_id],
-        },
-        fixed_network,
-        fixed_subnet,
         dns_nameserver,
         master_lb_enabled,
         floating_ip_enabled,
       };
+      if (external_network_id) {
+        values.externalNetwork = {
+          selectedRowKeys: [external_network_id],
+          selectedRows: [externalNetwork],
+        };
+      }
       if (fixed_network) {
-        values.fixedNetwork = {
+        values.fixedNetwork = fixedNetworkContext || {
           selectedRowKeys: [fixed_network],
+          selectedRows: [fixedNetwork],
         };
       }
       if (fixed_subnet) {
-        const { subnetInitValue } = this.state;
-
-        if (subnetInitValue) {
-          values.fixedSubnet = subnetInitValue;
-        } else {
-          values.fixedSubnet = {
-            selectedRowKeys: [fixed_subnet],
-          };
-        }
+        values.fixedSubnet = fixedSubnetContext || {
+          selectedRowKeys: [fixed_subnet],
+          selectedRows: [fixedSubnet],
+        };
       }
     }
 
@@ -133,8 +134,15 @@ export class StepNetwork extends Base {
   }
 
   get formItems() {
-    const { extra: { network_driver } = {} } = this.props;
-    const { subnetInitValue } = this.state;
+    const {
+      extra: { network_driver, fixed_subnet, fixedSubnet } = {},
+      context: { fixedSubnet: fixedSubnetContext },
+    } = this.props;
+
+    const initSubnet = fixedSubnetContext || {
+      selectedRowKeys: fixed_subnet ? [fixed_subnet] : [],
+      selectedRows: fixedSubnet ? [fixedSubnet] : [],
+    };
 
     return [
       {
@@ -208,18 +216,13 @@ export class StepNetwork extends Base {
         ],
         columns: networkColumns(this),
         onChange: (value) => {
-          this.setState(
-            {
-              fixedNetwork: value,
-              subnetInitValue: {
-                selectedRowKeys: [],
-                selectedRows: [],
-              },
+          this.updateContext({
+            fixedNetwork: value,
+            fixedSubnet: {
+              selectedRowKeys: [],
+              selectedRows: [],
             },
-            () => {
-              this.formRef.current.resetFields(['fixedSubnet']);
-            }
-          );
+          });
         },
       },
       {
@@ -227,36 +230,19 @@ export class StepNetwork extends Base {
         label: t('Fixed Subnet'),
         type: 'select-table',
         data: this.subnetList,
-        initValue: subnetInitValue,
         filterParams: [
           {
             label: t('Name'),
             name: 'name',
           },
         ],
-        columns: [
-          {
-            title: t('Name'),
-            dataIndex: 'name',
-          },
-          {
-            title: t('CIDR'),
-            dataIndex: 'cidr',
-          },
-          {
-            title: t('Gateway IP'),
-            dataIndex: 'gateway_ip',
-          },
-          {
-            title: t('IP Version'),
-            dataIndex: 'ip_version',
-          },
-          {
-            title: t('Created At'),
-            dataIndex: 'created_at',
-            valueRender: 'toLocalTime',
-          },
-        ],
+        columns: subnetColumns,
+        initValue: initSubnet,
+        onChange: (value) => {
+          this.updateContext({
+            fixedSubnet: value,
+          });
+        },
       },
       {
         name: 'dns_nameserver',

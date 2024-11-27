@@ -40,7 +40,8 @@ export class CreatePool extends ModalAction {
   static policy = 'os_load-balancer_api:pool:post';
 
   static allowed = async (item, containerProps) => {
-    let { detail: lbDetail } = containerProps || {};
+    const { detail } = containerProps || {};
+    let lbDetail = item.loadBalancer || detail;
     if (!lbDetail) {
       lbDetail = await globalLbaasStore.pureFetchDetail(item.loadbalancers[0]);
     }
@@ -67,6 +68,12 @@ export class CreatePool extends ModalAction {
       algorithm: e,
     });
   };
+
+  get defaultValue() {
+    return {
+      admin_state_up: true,
+    };
+  }
 
   get formItems() {
     const { algorithm } = this.state;
@@ -97,6 +104,12 @@ export class CreatePool extends ModalAction {
         type: 'select',
         options: this.filterOptions,
         required: true,
+      },
+      {
+        name: 'admin_state_up',
+        label: t('Admin State Up'),
+        type: 'switch',
+        tip: t('Defines the admin state of the pool.'),
       },
     ];
   }

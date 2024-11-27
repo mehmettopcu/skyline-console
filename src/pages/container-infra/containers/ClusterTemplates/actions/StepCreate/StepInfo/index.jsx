@@ -64,12 +64,12 @@ export class StepInfo extends Base {
         name: 'name',
         label: t('Cluster Template Name'),
         type: 'input',
-        placeholder: t('Cluster Template Name'),
+        placeholder: t('Please input cluster template name'),
         required: true,
       },
       {
         name: 'coe',
-        label: t('Container Orchestration Engine'),
+        label: t('COE'),
         type: 'select',
         options: [
           {

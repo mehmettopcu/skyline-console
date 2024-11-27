@@ -34,7 +34,10 @@ export class ClusterTemplateDetail extends Base {
   }
 
   get actionConfigs() {
-    return actionConfigs;
+    if (this.isAdminPage) {
+      return actionConfigs.actionConfigsAdmin;
+    }
+    return actionConfigs.actionConfigs;
   }
 
   get detailInfos() {
@@ -44,14 +47,19 @@ export class ClusterTemplateDetail extends Base {
         dataIndex: 'name',
       },
       {
-        title: t('Created'),
+        title: t('Created At'),
         dataIndex: 'created_at',
         valueRender: 'toLocalTime',
       },
       {
-        title: t('Updated'),
+        title: t('Updated At'),
         dataIndex: 'updated_at',
         valueRender: 'toLocalTime',
+      },
+      {
+        title: t('Project ID'),
+        dataIndex: 'project_id',
+        hidden: !this.isAdminPage,
       },
     ];
   }

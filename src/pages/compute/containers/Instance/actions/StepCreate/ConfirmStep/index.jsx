@@ -36,7 +36,10 @@ export class ConfirmStep extends Base {
 
   allowed = () => Promise.resolve();
 
-  getDisk(diskInfo) {
+  getDisk(diskInfo, bootFromVolume) {
+    if (!bootFromVolume) {
+      return null;
+    }
     const { size, typeOption, deleteTypeLabel } = diskInfo || {};
     return `${typeOption.label} ${size}GiB ${deleteTypeLabel}`;
   }
@@ -47,6 +50,11 @@ export class ConfirmStep extends Base {
     return `${volume_type} ${size}GiB`;
   }
 
+  getDeleteVolumeInstance() {
+    const { deleteVolumeInstance } = this.props?.context;
+    return deleteVolumeInstance ? t('Yes') : t('No');
+  }
+
   getSystemDisk() {
     if (!this.enableCinder) return null;
     const { context } = this.props;
@@ -54,14 +62,15 @@ export class ConfirmStep extends Base {
       systemDisk,
       source: { value } = {},
       instanceSnapshotDisk,
+      bootFromVolume = true,
     } = context;
     if (value === 'bootableVolume') {
       return this.getBootableVolumeDisk();
     }
     if (value === 'instanceSnapshot' && instanceSnapshotDisk !== null) {
-      return this.getDisk(instanceSnapshotDisk);
+      return this.getDisk(instanceSnapshotDisk, bootFromVolume);
     }
-    return this.getDisk(systemDisk);
+    return this.getDisk(systemDisk, bootFromVolume);
   }
 
   getDataDisk() {
@@ -79,7 +88,7 @@ export class ConfirmStep extends Base {
     ) {
       allDataDisks = getAllDataDisks({ dataDisk, instanceSnapshotDataVolumes });
     }
-    return allDataDisks.map((it) => this.getDisk(it.value));
+    return allDataDisks.map((it) => this.getDisk(it.value, true));
   }
 
   getFlavor() {
@@ -215,6 +224,11 @@ export class ConfirmStep extends Base {
         value: this.getSystemDisk(),
       },
       {
+        label: t('Delete Volume on Instance Delete'),
+        value: this.getDeleteVolumeInstance(),
+        key: 'deleteVolume',
+      },
+      {
         label: t('Available Zone'),
         value: context.availableZone.label,
       },
@@ -240,6 +254,9 @@ export class ConfirmStep extends Base {
       baseItems = baseItems.filter(
         (it) => ![t('System Disk'), t('Data Disk')].includes(it.label)
       );
+    }
+    if (context.source.value.toUpperCase() !== 'BOOTABLEVOLUME') {
+      baseItems = baseItems.filter((it) => it?.key !== 'deleteVolume');
     }
     return [
       {

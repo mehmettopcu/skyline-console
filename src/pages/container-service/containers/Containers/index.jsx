@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import React from 'react';
 import Base from 'containers/List';
 import { inject, observer } from 'mobx-react';
 import globalContainersStore from 'src/stores/zun/containers';
-import { containerStatus, containerTaskStatus } from 'resources/zun/container';
+import {
+  containerStatus,
+  containerTaskStatus,
+  imageDrivers,
+} from 'resources/zun/container';
+import { getOptions } from 'utils';
 import actionConfigs from './actions';
 
 export class Containers extends Base {
@@ -39,36 +45,105 @@ export class Containers extends Base {
     return actionConfigs.actionConfigs;
   }
 
-  get rowKey() {
-    return 'uuid';
+  getColumns() {
+    return [
+      {
+        title: t('ID/Name'),
+        dataIndex: 'name',
+        isLink: true,
+        routeName: this.getRouteName('zunContainerDetail'),
+        idKey: 'uuid',
+      },
+      {
+        title: t('Image Driver'),
+        isHideable: true,
+        dataIndex: 'image_driver',
+        valueMap: imageDrivers,
+      },
+      {
+        title: t('IP Address'),
+        isHideable: true,
+        dataIndex: 'addrs',
+        render: (value = []) => (
+          <>
+            {value.length
+              ? value.map((it) => {
+                  return <div key={it.addr}>{it.addr}</div>;
+                })
+              : '-'}
+          </>
+        ),
+        stringify: (value = []) => value.map((it) => it.addr).join(','),
+      },
+      {
+        title: t('Ports'),
+        isHideable: true,
+        dataIndex: 'ports',
+        render: (value = []) => (
+          <>
+            {value.length
+              ? value.map((it) => {
+                  return <div key={it}>{it}</div>;
+                })
+              : '-'}
+          </>
+        ),
+      },
+      {
+        title: t('Networks'),
+        isHideable: true,
+        dataIndex: 'networks',
+        render: (value = []) => (
+          <>
+            {value.length
+              ? value.map((it) => {
+                  const link = this.getLinkRender('networkDetail', it.name, {
+                    id: it.id,
+                  });
+                  return <div key={it.id}>{link}</div>;
+                })
+              : '-'}
+          </>
+        ),
+      },
+      {
+        title: t('Container Status'),
+        isHideable: true,
+        dataIndex: 'status',
+        valueMap: containerStatus,
+      },
+      {
+        title: t('Task State'),
+        isHideable: true,
+        dataIndex: 'task_state',
+        valueMap: containerTaskStatus,
+      },
+    ];
   }
 
-  getColumns = () => [
-    {
-      title: t('ID/Name'),
-      dataIndex: 'name',
-      isLink: true,
-      routeName: this.getRouteName('zunContainerDetail'),
-      idKey: 'uuid',
-    },
-    {
-      title: t('Status'),
-      isHideable: true,
-      dataIndex: 'status',
-      valueMap: containerStatus,
-    },
-    {
-      title: t('Image'),
-      isHideable: true,
-      dataIndex: 'image',
-    },
-    {
-      title: t('Task State'),
-      isHideable: true,
-      dataIndex: 'task_state',
-      valueMap: containerTaskStatus,
-    },
-  ];
+  get searchFilters() {
+    return [
+      {
+        label: t('Name'),
+        name: 'name',
+      },
+      {
+        label: t('Image Driver'),
+        name: 'image_driver',
+        options: getOptions(imageDrivers),
+      },
+      {
+        label: t('Container Status'),
+        name: 'status',
+        options: getOptions(containerStatus),
+      },
+      {
+        label: t('Task State'),
+        name: 'task_state',
+        options: getOptions(containerTaskStatus),
+      },
+    ];
+  }
 }
 
 export default inject('rootStore')(observer(Containers));

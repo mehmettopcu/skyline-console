@@ -3,7 +3,7 @@
 
 .container {
   height: 100%;
-  padding: 44px;
+  padding: @overview-padding;
   overflow: auto;
 
   .main-icon {
@@ -110,6 +110,10 @@
     .ant-card {
       box-shadow: unset;
     }
+
+    .ant-card-body {
+      padding: 0 !important;
+    }
   }
 
   .title {
@@ -137,7 +141,7 @@
   .action {
     float: right;
     margin-top: 6px;
-    color: #0068ff;
+    color: @primary-color;
     font-size: 12px;
     cursor: pointer;
   }
@@ -156,6 +160,11 @@
             font-weight: 500;
             font-size: 16px;
           }
+        }
+
+        .ant-card-body {
+          padding: 12px !important;
+          box-shadow: unset !important;
         }
       }
 

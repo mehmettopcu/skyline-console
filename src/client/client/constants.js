@@ -35,6 +35,8 @@ export const endpointVersionMap = {
   barbican: 'v1',
   zun: 'v1',
   magnum: 'v1',
+  designate: 'v2',
+  masakari: 'v1',
 };
 
 export const endpointsDefault = {
@@ -75,6 +77,8 @@ export const manilaBase = () => getOpenstackEndpoint('manilav2');
 export const barbicanBase = () => getOpenstackEndpoint('barbican');
 export const zunBase = () => getOpenstackEndpoint('zun');
 export const magnumBase = () => getOpenstackEndpoint('magnum');
+export const designateBase = () => getOpenstackEndpoint('designate');
+export const masakariBase = () => getOpenstackEndpoint('masakari');
 
 export const ironicOriginEndpoint = () => getOriginEndpoint('ironic');
 export const vpnEndpoint = () => getOriginEndpoint('neutron_vpn');
@@ -84,6 +88,8 @@ export const swiftEndpoint = () => getOriginEndpoint('swift');
 export const cinderEndpoint = () => getOriginEndpoint('cinder');
 export const manilaEndpoint = () => getOriginEndpoint('manilav2');
 export const zunEndpoint = () => getOriginEndpoint('zun');
+export const masakariEndpoint = () => getOriginEndpoint('masakari');
+export const firewallEndpoint = () => getOriginEndpoint('neutron_firewall');
 
 export const apiVersionMaps = {
   nova: {
@@ -112,7 +118,7 @@ export const apiVersionMaps = {
   },
   zun: {
     key: 'OpenStack-API-Version',
-    value: 'container 1.11',
+    value: 'container 1.40',
   },
 };
 

@@ -71,7 +71,7 @@ export class StepCreate extends StepAction {
     });
     await Promise.all([
       this.projectStore.fetchProjectNovaQuota(),
-      this.projectStore.fetchProjectCinderQuota(),
+      this.enableCinder ? this.projectStore.fetchProjectCinderQuota() : null,
     ]);
     this.setState({
       quotaLoading: false,
@@ -285,7 +285,7 @@ export class StepCreate extends StepAction {
     }
     if (value > left) {
       return t(
-        'Insufficient {name} quota to create resources(left { quota }, input { input }).',
+        'Insufficient {name} quota to create resources (left { quota }, input { input }).',
         { name, quota: left, input: value }
       );
     }
@@ -301,6 +301,7 @@ export class StepCreate extends StepAction {
       source: { value: sourceValue } = {},
       instanceSnapshotDisk = {},
       instanceSnapshotDataVolumes = [],
+      bootFromVolume = true,
     } = data;
     const newCountMap = {};
     const newSizeMap = {};
@@ -309,7 +310,7 @@ export class StepCreate extends StepAction {
     const isSnapshotType = sourceValue === 'instanceSnapshot';
     if (isSnapshotType && instanceSnapshotDisk) {
       const { size, typeOption: { label } = {} } = instanceSnapshotDisk;
-      if (label) {
+      if (label && bootFromVolume) {
         newCountMap[label] = !newCountMap[label] ? 1 : newCountMap[label] + 1;
         newSizeMap[label] = !newSizeMap[label]
           ? size
@@ -317,7 +318,7 @@ export class StepCreate extends StepAction {
         totalNewCount += 1 * count;
         totalNewSize += size * count;
       }
-    } else if (systemDisk.type) {
+    } else if (systemDisk.type && bootFromVolume) {
       const { size } = systemDisk;
       const { label } = systemDisk.typeOption || {};
       newCountMap[label] = !newCountMap[label] ? 1 : newCountMap[label] + 1;
@@ -518,9 +519,9 @@ export class StepCreate extends StepAction {
     return null;
   }
 
-  renderFooterLeft() {
+  getCountInputConfig() {
     const { data } = this.state;
-    const { count = 1, source: { value: sourceValue } = {} } = data;
+    const { source: { value: sourceValue } = {} } = data;
     const configs = {
       min: 1,
       max:
@@ -533,17 +534,30 @@ export class StepCreate extends StepAction {
       onChange: this.onCountChange,
       formatter: (value) => `$ ${value}`.replace(/\D/g, ''),
     };
+    return configs;
+  }
+
+  renderCountInput() {
+    const { data } = this.state;
+    const { count = 1 } = data || {};
+    const configs = this.getCountInputConfig();
+    return (
+      <div className={styles['number-input']}>
+        <span>{t('Count')}</span>
+        <InputNumber
+          {...configs}
+          value={count}
+          className={classnames(styles.input, 'instance-count')}
+        />
+      </div>
+    );
+  }
+
+  renderFooterLeft() {
     return (
       <div style={{ display: 'flex' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className={styles['number-input']}>
-            <span>{t('Count')}</span>
-            <InputNumber
-              {...configs}
-              value={count}
-              className={classnames(styles.input, 'instance-count')}
-            />
-          </div>
+          {this.renderCountInput()}
           {this.renderExtra()}
         </div>
         {this.renderBadge()}
@@ -564,6 +578,8 @@ export class StepCreate extends StepAction {
       instanceSnapshotDisk,
       source,
       systemDisk,
+      bootFromVolume = true,
+      deleteVolumeInstance,
     } = values;
     const { value: sourceValue } = source;
     const imageRef =
@@ -579,21 +595,23 @@ export class StepCreate extends StepAction {
     }
     let rootVolume = {};
     if (sourceValue !== 'bootableVolume') {
-      const { deleteType, type, size } = systemDisk || {};
-      rootVolume = {
-        boot_index: 0,
-        uuid: imageRef,
-        source_type: 'image',
-        volume_size: size,
-        destination_type: 'volume',
-        volume_type: type,
-        delete_on_termination: deleteType === 1,
-      };
-      if (sourceValue === 'instanceSnapshot') {
-        if (instanceSnapshotDisk) {
-          delete rootVolume.volume_size;
-          delete rootVolume.volume_type;
-          delete rootVolume.delete_on_termination;
+      if (bootFromVolume) {
+        const { deleteType, type, size } = systemDisk || {};
+        rootVolume = {
+          boot_index: 0,
+          uuid: imageRef,
+          source_type: 'image',
+          volume_size: size,
+          destination_type: 'volume',
+          volume_type: type,
+          delete_on_termination: deleteType === 1,
+        };
+        if (sourceValue === 'instanceSnapshot') {
+          if (instanceSnapshotDisk) {
+            delete rootVolume.volume_size;
+            delete rootVolume.volume_type;
+            delete rootVolume.delete_on_termination;
+          }
         }
       }
     } else {
@@ -602,6 +620,7 @@ export class StepCreate extends StepAction {
         uuid: bootableVolume.selectedRowKeys[0],
         source_type: 'volume',
         destination_type: 'volume',
+        delete_on_termination: deleteVolumeInstance,
       };
     }
     const dataVolumes = dataDisk
@@ -623,15 +642,19 @@ export class StepCreate extends StepAction {
     if (
       sourceValue === 'image' &&
       image.selectedRows[0].disk_format === 'iso' &&
-      dataVolumes[0]
+      dataVolumes[0] &&
+      bootFromVolume
     ) {
       dataVolumes[0].boot_index = 0;
       dataVolumes[0].device_type = 'disk';
       rootVolume.boot_index = 1;
       rootVolume.device_type = 'cdrom';
     }
+    const volumes = isEmpty(rootVolume)
+      ? [...dataVolumes]
+      : [rootVolume, ...dataVolumes];
     return {
-      volumes: [rootVolume, ...dataVolumes],
+      volumes,
       imageRef,
     };
   }
@@ -682,6 +705,7 @@ export class StepCreate extends StepAction {
       serverGroup,
       name,
       count = 1,
+      bootFromVolume = true,
     } = values;
     if (hasIp && count > 1) {
       this.ipBatchError = true;
@@ -701,7 +725,7 @@ export class StepCreate extends StepAction {
     if (this.enableCinder) {
       server.block_device_mapping_v2 = volumes;
     }
-    if (imageRef && !volumes) {
+    if (imageRef && (!volumes || !bootFromVolume)) {
       server.imageRef = imageRef;
     }
     if (loginType.value === 'keypair') {
@@ -719,7 +743,10 @@ export class StepCreate extends StepAction {
         physicalNode.selectedRows[0].hypervisor_hostname;
     }
     if (server.adminPass || userData) {
-      server.user_data = btoa(getUserData(server.adminPass, userData));
+      const { username } = values;
+      server.user_data = btoa(
+        getUserData(server.adminPass, userData, username || 'root')
+      );
     }
     const body = {
       server,

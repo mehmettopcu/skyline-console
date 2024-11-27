@@ -53,11 +53,14 @@ const Share = lazy(() =>
 const ContainerInfra = lazy(() =>
   import(/* webpackChunkName: "container-infra" */ 'pages/container-infra/App')
 );
-const Containers = lazy(() =>
+const ContainerService = lazy(() =>
   import(/* webpackChunkName: "Container" */ 'pages/container-service/App')
 );
 const E404 = lazy(() =>
   import(/* webpackChunkName: "E404" */ 'pages/base/containers/404')
+);
+const InstanceHA = lazy(() =>
+  import(/* webpackChunkName: "Inctance-HA" */ 'pages/ha/App')
 );
 const PATH = '/';
 
@@ -113,8 +116,12 @@ export default [
         component: ContainerInfra,
       },
       {
-        path: `/container`,
-        component: Containers,
+        path: `/container-service`,
+        component: ContainerService,
+      },
+      {
+        path: `/ha`,
+        component: InstanceHA,
       },
       { path: '*', component: E404 },
     ],

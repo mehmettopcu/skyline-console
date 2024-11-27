@@ -15,6 +15,7 @@ import { SecurityGroupStore } from 'stores/neutron/security-group';
 import { PortStore } from 'stores/neutron/port-extension';
 import Base from 'components/Form';
 import { inject, observer } from 'mobx-react';
+import { toJS } from 'mobx';
 import { portColumns, portFilters } from 'src/resources/neutron/port';
 import {
   securityGroupColumns,
@@ -26,6 +27,7 @@ export class StepNetworks extends Base {
   init() {
     this.portStore = new PortStore();
     this.securityGroupStore = new SecurityGroupStore();
+    this.getPorts();
   }
 
   get title() {
@@ -36,19 +38,22 @@ export class StepNetworks extends Base {
     return t('Networks');
   }
 
-  get nameForStateUpdate() {
-    return ['networks'];
+  getPorts() {
+    this.portStore.fetchList({
+      project_id: this.currentProjectId,
+      status: 'DOWN',
+    });
   }
 
-  get defaultValue() {
-    const data = {
-      networks: [],
-    };
-    return data;
+  get ports() {
+    return (toJS(this.portStore.list.data) || []).filter((it) => !it.device_id);
   }
 
   get formItems() {
-    const { networks } = this.state;
+    const { networks = [] } = this.state;
+    const {
+      context: { exposedPorts = [] },
+    } = this.props;
 
     return [
       {
@@ -66,11 +71,11 @@ export class StepNetworks extends Base {
         name: 'ports',
         type: 'select-table',
         label: t('Ports'),
-        extraParams: { project_id: this.currentProjectId, status: 'DOWN' },
-        backendPageStore: this.portStore,
+        data: this.ports,
+        isLoading: this.portStore.list.isLoading,
         isMulti: true,
         header: t(
-          'Ports provide extra communication channels to your instances. You can select ports instead of networks or a mix of both (The port executes its own security group rules by default).'
+          'Ports provide extra communication channels to your containers. You can select ports instead of networks or a mix of both, If the terminal port and the network are selected at the same time, note that the terminal port is not a terminal port of the selected network, and the container under the same network will only be assigned one IP address (The port executes its own security group rules by default).'
         ),
         filterParams: portFilters,
         columns: portColumns,
@@ -82,7 +87,7 @@ export class StepNetworks extends Base {
         backendPageStore: this.securityGroupStore,
         extraParams: { project_id: this.currentProjectId },
         isMulti: true,
-        hidden: !networks || !networks.length,
+        hidden: exposedPorts.length || !networks.length,
         header: (
           <div style={{ marginBottom: 8 }}>
             {t(
@@ -92,11 +97,13 @@ export class StepNetworks extends Base {
             {getLinkRender({
               key: 'securityGroup',
               value: `${t('create a new security group')}> `,
+              extra: { target: '_blank' },
             })}
           </div>
         ),
         filterParams: securityGroupFilter,
         columns: securityGroupColumns,
+        tip: t('If exposed port is specified, this parameter will be ignored.'),
       },
     ];
   }

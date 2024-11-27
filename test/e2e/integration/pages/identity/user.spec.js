@@ -41,7 +41,7 @@ describe('The User Page', () => {
   it('successfully create', () => {
     const creatUrl = `${listUrl}/create`;
 
-    cy.clickHeaderButton(1)
+    cy.clickHeaderActionButton(0)
       .url()
       .should('include', creatUrl)
       .formInput('name', name)
@@ -62,7 +62,7 @@ describe('The User Page', () => {
       .url()
       .should('not.include', creatUrl)
       .tableSearchText(name)
-      .waitStatusGreen(7);
+      .waitStatusGreen(8);
   });
 
   it('successfully detail', () => {

@@ -21,6 +21,10 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 export class EditForm extends ModalAction {
   init() {
     this.store = globalUserStore;
+    const {
+      list: { data },
+    } = this.store;
+    data.length === 0 && this.store.fetchList();
   }
 
   static id = 'user-edit';
@@ -63,9 +67,16 @@ export class EditForm extends ModalAction {
       list: { data },
     } = this.store;
     const { id } = this.item;
-    const nameUsed = data.find((it) => it.name === value && it.id !== id);
+    const nameUsed = data.find(
+      (it) =>
+        it.name === value &&
+        it.id !== id &&
+        it.domain_id === this.item.domain_id
+    );
     if (nameUsed) {
-      return Promise.reject(t('Invalid: User name can not be duplicated'));
+      return Promise.reject(
+        t('Invalid: User names in the domain can not be repeated')
+      );
     }
     return Promise.resolve();
   };

@@ -15,6 +15,7 @@
 import { inject, observer } from 'mobx-react';
 import { StepAction } from 'containers/Action';
 import globalLbaasStore from 'stores/octavia/loadbalancer';
+import { getInsertHeadersValueFromForm } from 'resources/octavia/lb';
 import BaseStep from './BaseStep';
 import ListenerStep from '../../../StepCreateComponents/ListenerStep';
 import PoolStep from '../../../StepCreateComponents/PoolStep';
@@ -82,6 +83,7 @@ export class StepCreate extends StepAction {
       description,
       vip_address,
       vip_network_id,
+      admin_state_enabled,
       enableHealthMonitor,
       listener_protocol,
       listener_ssl_parsing_method,
@@ -89,6 +91,10 @@ export class StepCreate extends StepAction {
       listener_default_tls_container_ref,
       listener_client_ca_tls_container_ref,
       listener_sni_container_refs,
+      listener_admin_state_up,
+      pool_admin_state_up,
+      monitor_admin_state_up,
+      insert_headers,
       ...rest
     } = values;
     const data = {
@@ -101,10 +107,17 @@ export class StepCreate extends StepAction {
     if (ip_address && ip_address.ip) {
       data.vip_address = ip_address.ip;
     }
+    data.admin_state_up = admin_state_enabled;
 
     const listenerData = {
+      admin_state_up: listener_admin_state_up,
       protocol: listener_protocol,
     };
+
+    const insertHeaders = getInsertHeadersValueFromForm(insert_headers);
+    if (insertHeaders) {
+      listenerData.insert_headers = insertHeaders;
+    }
 
     if (listener_protocol === 'TERMINATED_HTTPS') {
       if (listener_default_tls_container_ref) {
@@ -127,8 +140,8 @@ export class StepCreate extends StepAction {
       }
     }
 
-    const poolData = {};
-    const healthMonitorData = {};
+    const poolData = { admin_state_up: pool_admin_state_up };
+    const healthMonitorData = { admin_state_up: monitor_admin_state_up };
     Object.keys(rest).forEach((i) => {
       if (i.indexOf('listener') === 0) {
         listenerData[i.replace('listener_', '')] = values[i];

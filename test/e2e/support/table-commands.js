@@ -18,28 +18,45 @@ Cypress.Commands.add('waitTableLoading', () => {
   cy.get('.ant-spin-dot-spin', { timeout: 120000 }).should('not.exist');
 });
 
-Cypress.Commands.add('clickHeaderButton', (buttonIndex, waitTime = 2000) => {
-  cy.get('.table-header-btns')
-    .find('button')
-    .eq(buttonIndex)
-    .click({ force: true });
-  cy.wait(waitTime);
-});
+Cypress.Commands.add(
+  'clickHeaderTableButton',
+  (buttonIndex, waitTime = 2000) => {
+    cy.get('.table-header-btns')
+      .find('button')
+      .eq(buttonIndex)
+      .click({ force: true });
+    cy.wait(waitTime);
+  }
+);
 
-Cypress.Commands.add('clickHeaderButtonByTitle', (title, waitTime = 2000) => {
-  const realTitle = getTitle(title);
-  cy.get('.table-header-btns')
-    .find('button')
-    .contains(realTitle)
-    .click({ force: true });
-  cy.wait(waitTime);
-});
+Cypress.Commands.add(
+  'clickHeaderActionButton',
+  (buttonIndex, waitTime = 2000) => {
+    cy.get('.table-header-action-btns')
+      .find('button')
+      .eq(buttonIndex)
+      .click({ force: true });
+    cy.wait(waitTime);
+  }
+);
+
+Cypress.Commands.add(
+  'clickHeaderActionButtonByTitle',
+  (title, waitTime = 2000) => {
+    const realTitle = getTitle(title);
+    cy.get('.table-header-action-btns')
+      .find('button')
+      .contains(realTitle)
+      .click({ force: true });
+    cy.wait(waitTime);
+  }
+);
 
 Cypress.Commands.add(
   'clickHeaderConfirmButtonByTitle',
   (title, waitTime = 2000) => {
     const realTitle = getTitle(title);
-    cy.get('.table-header-btns')
+    cy.get('.table-header-action-btns')
       .find('button')
       .contains(realTitle)
       .click({ force: true });
@@ -49,14 +66,14 @@ Cypress.Commands.add(
 );
 
 Cypress.Commands.add(
-  'clickHeaderButtonInMoreByTitle',
+  'clickHeaderActionButtonInMoreByTitle',
   (title, waitTime = 2000) => {
     const realTitle = getTitle(title);
     const moreTitle = getTitle('More Actions');
-    cy.get('.table-header-btns')
+    cy.get('.table-header-action-btns')
       .find('.ant-dropdown-trigger')
       .contains(moreTitle)
-      .trigger('mouseover');
+      .trigger('mouseover', { force: true });
     cy.get('ul.ant-dropdown-menu-light')
       .last()
       .find('button')
@@ -95,7 +112,7 @@ Cypress.Commands.add('clickMoreActionButton', (buttonIndex) => {
   cy.get('.ant-table-row')
     .first()
     .find('.ant-dropdown-trigger')
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   cy.get('ul.ant-dropdown-menu-light')
     .find('li')
     .eq(buttonIndex)
@@ -106,7 +123,7 @@ Cypress.Commands.add('clickActionInMore', (title, waitTime = 2000) => {
   cy.get('.ant-table-row')
     .first()
     .find('.ant-dropdown-trigger')
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   const realTitle = getTitle(title);
   cy.get('ul.ant-dropdown-menu-light')
     .contains(realTitle)
@@ -118,12 +135,12 @@ Cypress.Commands.add('clickActionInMoreSub', (title, subMenu) => {
   cy.get('.ant-table-row')
     .first()
     .find('.ant-dropdown-trigger')
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   const realTitle = getTitle(title);
   const realMenu = getTitle(subMenu);
   cy.get('.ant-dropdown-menu-submenu-title')
     .contains(realMenu)
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   cy.get('.ant-dropdown-menu-submenu-popup')
     .last()
     .find('button')
@@ -190,7 +207,7 @@ Cypress.Commands.add('checkActionDisabled', (title) => {
   cy.get('.ant-table-row')
     .first()
     .find('.ant-dropdown-trigger')
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   cy.get('ul.ant-dropdown-menu-light').contains(realTitle).should('not.exist');
 });
 
@@ -204,7 +221,7 @@ Cypress.Commands.add('checkActionDisabledInFirstRow', (title, name) => {
     .get('.ant-table-row')
     .first()
     .find('.ant-dropdown-trigger')
-    .trigger('mouseover')
+    .trigger('mouseover', { force: true })
     .get('ul.ant-dropdown-menu-light')
     .contains(realTitle)
     .should('not.exist');
@@ -228,7 +245,7 @@ Cypress.Commands.add('clickConfirmActionInMore', (title, waitTime) => {
   cy.get('.ant-table-row')
     .first()
     .find('.ant-dropdown-trigger')
-    .trigger('mouseover');
+    .trigger('mouseover', { force: true });
   const realTitle = getTitle(title);
   cy.get('ul.ant-dropdown-menu-light')
     .contains(realTitle)
@@ -254,12 +271,12 @@ Cypress.Commands.add(
     cy.get('.ant-table-row')
       .first()
       .find('.ant-dropdown-trigger')
-      .trigger('mouseover');
+      .trigger('mouseover', { force: true });
     const realTitle = getTitle(title);
     const realMenu = getTitle(subMenu);
     cy.get('.ant-dropdown-menu-submenu-title')
       .contains(realMenu)
-      .trigger('mouseover');
+      .trigger('mouseover', { force: true });
     cy.get('.ant-dropdown-menu-submenu-popup')
       .last()
       .find('button')
@@ -320,7 +337,7 @@ Cypress.Commands.add('waitStatusTextByFresh', (text) => {
   const noLengthCallback = () => {
     // eslint-disable-next-line no-console
     console.log('not contain', index);
-    cy.freshTable();
+    cy.refreshTable();
     index += 1;
     cy.wait(5000);
   };
@@ -368,7 +385,7 @@ Cypress.Commands.add('waitStatusActiveByRefresh', () => {
   const noLengthCallback = () => {
     // eslint-disable-next-line no-console
     console.log('not active', index);
-    cy.freshTable();
+    cy.refreshTable();
     index += 1;
     cy.wait(5000);
     cy.getStatusLength(
@@ -422,10 +439,10 @@ Cypress.Commands.add('waitStatusGreen', (index) => {
   }
 });
 
-Cypress.Commands.add('freshTable', () => {
+Cypress.Commands.add('refreshTable', () => {
   // eslint-disable-next-line no-console
   console.log('fresh table');
-  cy.clickHeaderButton(0).waitTableLoading();
+  cy.clickHeaderTableButton(0).waitTableLoading();
 });
 
 Cypress.Commands.add('collapseItemClick', (name) => {

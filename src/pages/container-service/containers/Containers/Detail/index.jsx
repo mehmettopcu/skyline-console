@@ -19,6 +19,7 @@ import actionConfigs from '../actions';
 import BaseDetail from './BaseDetail';
 import ActionLogs from './ActionLogs';
 import Logs from './Logs';
+import Console from './Console';
 
 export class ContainerDetail extends Base {
   init() {
@@ -51,7 +52,7 @@ export class ContainerDetail extends Base {
         dataIndex: 'name',
       },
       {
-        title: t('Status'),
+        title: t('Container Status'),
         dataIndex: 'status',
         valueMap: containerStatus,
       },
@@ -59,7 +60,9 @@ export class ContainerDetail extends Base {
   }
 
   get showLogs() {
-    return checkPolicyRule('container:logs');
+    const { status } = this.detailData || {};
+    const acceptedStatus = ['Created', 'Running', 'Stopped', 'Paused'];
+    return checkPolicyRule('container:logs') && acceptedStatus.includes(status);
   }
 
   get tabs() {
@@ -80,6 +83,13 @@ export class ContainerDetail extends Base {
         title: t('Logs'),
         key: 'logs',
         component: Logs,
+      });
+    }
+    if (this.detailData.interactive === true) {
+      items.push({
+        title: t('Console'),
+        key: 'console',
+        component: Console,
       });
     }
     return items;
